@@ -40,6 +40,13 @@ spring:
     virtual:
       enabled: true
 
+app:
+  security:
+    # Falha no startup se ausente — gere com: openssl rand -base64 64
+    jwt-secret: ${JWT_SECRET:}
+    access-token-ttl: ${JWT_ACCESS_TTL_MINUTES:15}m
+    refresh-token-ttl: ${JWT_REFRESH_TTL_DAYS:7}d
+
 server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful
