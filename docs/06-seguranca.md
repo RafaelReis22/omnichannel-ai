@@ -3,12 +3,14 @@
 ## Isolamento multi-tenant
 
 - Toda tabela de negócio carrega `tenant_id`; Row-Level Security no Postgres impõe o isolamento no próprio banco, não apenas na camada de aplicação — uma falha de lógica na API não deve conseguir vazar dado entre tenants.
+- Mecanismo implementado ([ADR-0002](adr/ADR-0002-rls-papel-de-runtime.md)): o datasource assume o papel `app_runtime` (`NOBYPASSRLS`) via `SET ROLE` quando há contexto de tenant, e as políticas leem a GUC `app.tenant_id`. Sem contexto, nenhuma linha é visível. Testes de isolamento rodam contra Postgres real (Testcontainers) e são obrigatórios para todo repositório novo.
 - Chaves de API e webhooks são escopadas por tenant e nunca concedem acesso cross-tenant.
 
 ## Autenticação e autorização
 
-- Autenticação via Spring Security com JWT (access curto + refresh com rotação), senhas com hash Argon2id, suporte a 2FA desde o MVP para papel Admin.
-- RBAC via CASL: papéis (Admin, Gestor, Agente) no MVP, evoluindo para permissões granulares por recurso/canal na Fase 4.
+- Autenticação via Spring Security com JWT (access de 15 min + refresh de 7 dias com rotação e revogação; refresh persistido apenas como hash SHA-256), senhas com hash Argon2id, suporte a 2FA desde o MVP para papel Admin (2FA ainda não implementado — backlog da Fase 0).
+- Login não distingue "e-mail inexistente" de "senha errada" (mesma resposta 401 e custo de tempo equivalente) para não permitir enumeração de e-mails.
+- RBAC via papéis no JWT (Admin, Manager, Agent) + method security do Spring, evoluindo para permissões granulares por recurso/canal na Fase 4.
 - Toda ação sensível (mudar configuração de IA, conectar/desconectar canal, exportar dados, alterar permissão) passa por checagem de autorização no backend — nunca confiar em ocultar botão no frontend como controle de acesso.
 
 ## Proteção de dados e segredos

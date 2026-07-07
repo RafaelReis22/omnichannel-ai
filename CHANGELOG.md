@@ -12,3 +12,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Migrations de fundação: extensões `pgvector`/`pgcrypto` e tabela de outbox de eventos do Modulith.
 - Infra local: `docker-compose.yml` (Postgres+pgvector, Redis, RabbitMQ) e `Dockerfile` multi-stage.
 - CI no GitHub Actions (build + testes com Testcontainers + validação da imagem Docker), Dependabot, CODEOWNERS, templates de issue/PR, labels e milestones por fase do roadmap.
+- Multi-tenant com Row-Level Security real (ADR-0002): papel `app_runtime` sem bypass, políticas negar-por-padrão, `TenantAwareDataSource` propagando o contexto — com testes de isolamento contra Postgres real.
+- Autenticação JWT: signup (tenant + admin), login e refresh com rotação e revogação; senhas Argon2id; refresh tokens persistidos como hash SHA-256; proteção contra enumeração de e-mails.
+- Endpoints: `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/me`.
