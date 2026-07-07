@@ -18,7 +18,7 @@
 
 - GitHub Actions: lint → type-check → testes → build → deploy.
 - Deploy automático em `staging` a cada merge na branch principal; deploy em `produção` via aprovação manual (gate), nunca automático direto para produção no estágio atual do produto.
-- Migrations de banco (Prisma Migrate) rodam como etapa própria do pipeline, antes do deploy da nova versão da aplicação, com plano de rollback documentado por migration.
+- Migrations de banco (Flyway) rodam como etapa própria do pipeline, antes do deploy da nova versão da aplicação, com plano de rollback documentado por migration.
 
 ## Estratégia de release
 

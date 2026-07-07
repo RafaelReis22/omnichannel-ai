@@ -12,7 +12,7 @@ Os documentos em `docs/` são a documentação principal do projeto, definida an
 | `docs/01` a `docs/09` | Este conjunto de documentos — visão, produto, arquitetura, stack, escalabilidade, segurança, deploy, testes, documentação |
 | `docs/adr/` (a criar no início do desenvolvimento) | Architecture Decision Records — um arquivo por decisão técnica relevante (ex.: "por que Postgres+pgvector em vez de um vector store dedicado no MVP") |
 | `CLAUDE.md` (a criar no início do desenvolvimento) | Contexto de codebase para assistência de IA durante o desenvolvimento — convenções, comandos de build/test, estrutura de pastas |
-| OpenAPI/Swagger (autogerado do código, Fase 4) | Documentação da API pública, gerada a partir dos decorators do NestJS, nunca escrita manualmente em paralelo ao código |
+| OpenAPI/Swagger (autogerado do código, Fase 4) | Documentação da API pública, gerada a partir das annotations do springdoc no código Spring, nunca escrita manualmente em paralelo ao código |
 
 ## Quando criar um ADR
 

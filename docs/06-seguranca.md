@@ -7,7 +7,7 @@
 
 ## Autenticação e autorização
 
-- Sessão via Auth.js, senhas com hash Argon2id, suporte a 2FA desde o MVP para papel Admin.
+- Autenticação via Spring Security com JWT (access curto + refresh com rotação), senhas com hash Argon2id, suporte a 2FA desde o MVP para papel Admin.
 - RBAC via CASL: papéis (Admin, Gestor, Agente) no MVP, evoluindo para permissões granulares por recurso/canal na Fase 4.
 - Toda ação sensível (mudar configuração de IA, conectar/desconectar canal, exportar dados, alterar permissão) passa por checagem de autorização no backend — nunca confiar em ocultar botão no frontend como controle de acesso.
 

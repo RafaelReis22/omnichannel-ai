@@ -19,7 +19,7 @@ Modelo inicial: **monólito modular** em vez de microsserviços desde o dia 1. A
                               │   normaliza para evento   │
                               │   de mensagem interno)    │
                               └────────────┬─────────────┘
-                                           │ fila (BullMQ/Redis)
+                                           │ fila (RabbitMQ)
                                            ▼
         ┌───────────────────────────────────────────────────────────┐
         │                        API / Core                          │

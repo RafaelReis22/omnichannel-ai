@@ -8,9 +8,11 @@ Mínimo de 80% em código de negócio (módulos de conversas, IA, CRM, tenant/pe
 
 | Tipo | Ferramenta | Escopo |
 |---|---|---|
-| Unitário | Vitest | Funções puras, regras de negócio isoladas (cálculo de confiança, roteamento de fila, transformação de payload de canal) |
-| Integração | Vitest + banco de teste (Postgres via container) | Repositórios, RLS multi-tenant (garantir que um tenant nunca lê dado de outro), filas (BullMQ) |
+| Unitário (backend) | JUnit 5 + AssertJ | Funções puras, regras de negócio isoladas (cálculo de confiança, roteamento de fila, transformação de payload de canal) |
+| Integração | JUnit 5 + Testcontainers (Postgres real) | Repositórios, RLS multi-tenant (garantir que um tenant nunca lê dado de outro), filas (RabbitMQ) |
 | Contrato de canal | Mocks dos webhooks de cada provedor (Meta, BSP de WhatsApp, provedor de e-mail) | Garantir que o `ChannelAdapter` de cada canal normaliza corretamente eventos reais documentados pela API do provedor, sem depender da API real no CI |
+| Unitário (frontend) | Vitest | Hooks, transformações e componentes críticos do dashboard |
+| Arquitetura | Spring Modulith `ApplicationModules.verify()` + ArchUnit | Fronteiras de módulo não violadas — falha o build se um módulo importar internals de outro |
 | E2E | Playwright | Fluxos críticos de ponta a ponta (ver abaixo) |
 | Carga | k6 | Validar os gatilhos de escala definidos em [escalabilidade](05-escalabilidade.md) antes de precisar deles em produção |
 

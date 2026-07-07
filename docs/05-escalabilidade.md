@@ -21,7 +21,7 @@ Escalar por decoupling antes de escalar por força bruta. O monólito modular (v
 1. **Hoje → MVP**: monólito modular, um banco Postgres, filas no mesmo Redis, tudo em poucas réplicas.
 2. **Tração inicial**: separar o AI Worker em processo/deploy independente (primeiro serviço extraído, porque é o gargalo mais provável).
 3. **Múltiplos tenants grandes**: introduzir réplica de leitura no Postgres; avaliar partição de tenants de maior volume.
-4. **Escala enterprise**: extrair Channel Gateway como serviço próprio por canal se um canal específico dominar o volume; considerar fila mais robusta (Kafka) só se BullMQ/Redis se mostrar insuficiente — não antecipar essa troca sem evidência de gargalo real.
+4. **Escala enterprise**: extrair Channel Gateway como serviço próprio por canal se um canal específico dominar o volume; considerar fila mais robusta (Kafka) só se RabbitMQ se mostrar insuficiente — não antecipar essa troca sem evidência de gargalo real.
 
 ## O que deliberadamente não se otimiza cedo
 
