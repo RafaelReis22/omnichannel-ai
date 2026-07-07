@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (build + testes + arquitetura)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # Testcontainers (Postgres+pgvector, RabbitMQ, Redis) usa o Docker do runner
+      - name: Build, testes e verificação de arquitetura
+        working-directory: backend
+        run: ./mvnw -B verify
+
+      - name: Relatórios de teste (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+  docker-image:
+    name: Imagem Docker (build de validação)
+    runs-on: ubuntu-latest
+    needs: backend
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem
+        working-directory: backend
+        run: docker build -t omnichannel-backend:${{ github.sha }} .
