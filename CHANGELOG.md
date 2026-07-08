@@ -5,6 +5,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Dashboard (frontend/, Next.js 16 + React 19 + Tailwind 4): login com fluxo 2FA, signup de empresa, inbox com fila filtrável por status, conversa com resposta/assumir/resolver, base de conhecimento, configurações da IA e livro-razão com revisão — design system próprio com status semânticos e dark mode.
+- CORS configurável para o dashboard (`CORS_ALLOWED_ORIGINS`) e aberto no webchat público (widget roda no site do cliente).
 - Módulo de IA (coração do produto): AI Worker consome mensagens materializadas, decide com RAG (Spring AI + pgvector, Claude para chat e OpenAI para embeddings) + histórico da conversa, e aplica o **portão de confiança** — acima do limiar responde sozinho, abaixo devolve à fila humana com resumo gerado.
 - **Livro-razão de resolução**: toda decisão autônoma (resposta ou handoff) vira registro auditável com confiança, com revisão humana via API — o diferencial central contra o gap marketing-vs-realidade do mercado.
 - Base de conhecimento com chunking e retrieval escopado por tenant; RLS aplicado até nos vetores (política sobre o metadata JSONB).
