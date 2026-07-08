@@ -8,7 +8,10 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 
+import com.omnichannel.shared.ratelimit.RateLimitExceededException;
+import com.omnichannel.shared.ratelimit.RateLimiter;
 import com.omnichannel.shared.security.JwtService;
+import com.omnichannel.shared.security.RateLimitProperties;
 import com.omnichannel.shared.security.SecurityProperties;
 import com.omnichannel.shared.tenancy.TenantContext;
 import com.omnichannel.tenant.domain.RefreshToken;
@@ -50,18 +53,23 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final SecurityProperties securityProperties;
+	private final RateLimiter rateLimiter;
+	private final RateLimitProperties rateLimitProperties;
 	private final TransactionTemplate transactionTemplate;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public AuthService(TenantRepository tenantRepository, UserRepository userRepository,
 			RefreshTokenRepository refreshTokenRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-			SecurityProperties securityProperties, PlatformTransactionManager transactionManager) {
+			SecurityProperties securityProperties, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties,
+			PlatformTransactionManager transactionManager) {
 		this.tenantRepository = tenantRepository;
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
 		this.securityProperties = securityProperties;
+		this.rateLimiter = rateLimiter;
+		this.rateLimitProperties = rateLimitProperties;
 		this.transactionTemplate = new TransactionTemplate(transactionManager);
 		this.unknownUserDummyHash = passwordEncoder.encode(generateRefreshTokenValue());
 	}
@@ -81,17 +89,31 @@ public class AuthService {
 
 	public AuthTokens login(String email, String rawPassword) {
 		String normalizedEmail = User.normalizeEmail(email);
-		return TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> {
+		// Limite por conta-alvo: só FALHAS contam e o sucesso zera — proteção
+		// contra força bruta sem permitir que um atacante tranque a vítima
+		// para sempre (docs/06-seguranca.md).
+		String failureKey = "rl:auth:fail:" + sha256(normalizedEmail);
+		if (rateLimiter.isBlocked(failureKey, rateLimitProperties.emailFailureLimit())) {
+			throw new RateLimitExceededException("Muitas tentativas para esta conta. Tente novamente mais tarde.",
+					rateLimiter.secondsUntilReset(failureKey, rateLimitProperties.emailFailureWindow()));
+		}
+		AuthTokens tokens = TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> {
 			User user = userRepository.findByEmail(normalizedEmail).orElse(null);
 			if (user == null) {
 				passwordEncoder.matches(rawPassword, unknownUserDummyHash);
-				throw new AuthenticationFailedException("Credenciais inválidas");
+				return null;
 			}
 			if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-				throw new AuthenticationFailedException("Credenciais inválidas");
+				return null;
 			}
 			return issueTokens(user);
 		}));
+		if (tokens == null) {
+			rateLimiter.record(failureKey, rateLimitProperties.emailFailureWindow());
+			throw new AuthenticationFailedException("Credenciais inválidas");
+		}
+		rateLimiter.reset(failureKey);
+		return tokens;
 	}
 
 	public AuthTokens refresh(String refreshTokenValue) {
