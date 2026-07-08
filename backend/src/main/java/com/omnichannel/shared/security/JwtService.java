@@ -21,8 +21,11 @@ public class JwtService {
 	public static final String CLAIM_TENANT_ID = "tenant_id";
 	public static final String CLAIM_ROLE = "role";
 	public static final String CLAIM_EMAIL = "email";
+	public static final String CLAIM_MFA = "mfa";
+	public static final String MFA_PENDING = "pending";
 
 	private static final String ISSUER = "omnichannel-ai";
+	private static final java.time.Duration MFA_TOKEN_TTL = java.time.Duration.ofMinutes(5);
 
 	private final JwtEncoder jwtEncoder;
 	private final SecurityProperties properties;
@@ -42,6 +45,24 @@ public class JwtService {
 			.claim(CLAIM_TENANT_ID, tenantId.toString())
 			.claim(CLAIM_ROLE, role)
 			.claim(CLAIM_EMAIL, email)
+			.build();
+		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+		return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+	}
+
+	/**
+	 * Token efêmero da etapa intermediária do login com 2FA: prova que a
+	 * senha foi validada, mas NÃO autentica nenhuma rota (o resource server
+	 * rejeita pela claim {@code mfa=pending} — ver SecurityConfig).
+	 */
+	public String generateMfaChallengeToken(UUID userId) {
+		Instant now = Instant.now();
+		JwtClaimsSet claims = JwtClaimsSet.builder()
+			.issuer(ISSUER)
+			.subject(userId.toString())
+			.issuedAt(now)
+			.expiresAt(now.plus(MFA_TOKEN_TTL))
+			.claim(CLAIM_MFA, MFA_PENDING)
 			.build();
 		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
 		return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

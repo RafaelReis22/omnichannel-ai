@@ -22,9 +22,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -85,7 +91,18 @@ class SecurityConfig {
 
 	@Bean
 	JwtDecoder jwtDecoder(SecurityProperties properties) {
-		return NimbusJwtDecoder.withSecretKey(secretKey(properties)).macAlgorithm(MacAlgorithm.HS256).build();
+		NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey(properties))
+			.macAlgorithm(MacAlgorithm.HS256)
+			.build();
+		// O token intermediário do login com 2FA (claim mfa=pending) é assinado
+		// com a mesma chave — sem esta validação ele autenticaria qualquer rota.
+		OAuth2TokenValidator<Jwt> rejectMfaPending = jwt -> jwt.hasClaim(JwtService.CLAIM_MFA)
+				? OAuth2TokenValidatorResult
+					.failure(new OAuth2Error("invalid_token", "Token de desafio MFA não autentica rotas", null))
+				: OAuth2TokenValidatorResult.success();
+		decoder.setJwtValidator(
+				new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), rejectMfaPending));
+		return decoder;
 	}
 
 	private static SecretKey secretKey(SecurityProperties properties) {
