@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/*
+ * Direção visual: "console de operações calmo" — papel quente, tinta
+ * profunda, acento teal da marca, e cores SEMÂNTICAS por status de
+ * conversa (cor com significado, não decoração).
+ */
+:root {
+  --paper: oklch(97.5% 0.007 92);
+  --paper-raised: oklch(99.3% 0.004 92);
+  --ink: oklch(23% 0.022 260);
+  --ink-soft: oklch(45% 0.02 258);
+  --line: oklch(88% 0.012 90);
+
+  --accent: oklch(50% 0.11 175);
+  --accent-soft: oklch(93% 0.04 175);
+  --accent-ink: oklch(32% 0.075 175);
+
+  /* painel lateral: identidade da marca, não cinza de template */
+  --panel: oklch(26% 0.045 195);
+  --panel-ink: oklch(92% 0.02 175);
+  --panel-muted: oklch(68% 0.03 190);
+
+  /* status de conversa */
+  --st-open: oklch(62% 0.15 70);
+  --st-open-soft: oklch(95% 0.05 80);
+  --st-ai: oklch(55% 0.16 300);
+  --st-ai-soft: oklch(94% 0.05 300);
+  --st-human: oklch(52% 0.13 250);
+  --st-human-soft: oklch(94% 0.04 250);
+  --st-resolved: oklch(55% 0.13 155);
+  --st-resolved-soft: oklch(94% 0.05 155);
+
+  --danger: oklch(55% 0.19 25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: oklch(18% 0.015 258);
+    --paper-raised: oklch(22% 0.018 258);
+    --ink: oklch(93% 0.012 90);
+    --ink-soft: oklch(70% 0.02 100);
+    --line: oklch(31% 0.02 258);
+
+    --accent: oklch(72% 0.12 175);
+    --accent-soft: oklch(30% 0.05 175);
+    --accent-ink: oklch(87% 0.08 175);
+
+    --panel: oklch(20% 0.04 195);
+    --panel-ink: oklch(92% 0.02 175);
+    --panel-muted: oklch(62% 0.03 190);
+
+    --st-open: oklch(75% 0.13 75);
+    --st-open-soft: oklch(30% 0.06 70);
+    --st-ai: oklch(75% 0.13 300);
+    --st-ai-soft: oklch(30% 0.07 300);
+    --st-human: oklch(74% 0.11 250);
+    --st-human-soft: oklch(30% 0.06 250);
+    --st-resolved: oklch(75% 0.12 155);
+    --st-resolved-soft: oklch(28% 0.06 155);
+
+    --danger: oklch(70% 0.17 25);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-panel: var(--panel);
+  --color-panel-ink: var(--panel-ink);
+  --color-panel-muted: var(--panel-muted);
+  --color-st-open: var(--st-open);
+  --color-st-open-soft: var(--st-open-soft);
+  --color-st-ai: var(--st-ai);
+  --color-st-ai-soft: var(--st-ai-soft);
+  --color-st-human: var(--st-human);
+  --color-st-human-soft: var(--st-human-soft);
+  --color-st-resolved: var(--st-resolved);
+  --color-st-resolved-soft: var(--st-resolved-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
