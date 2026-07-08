@@ -42,6 +42,12 @@ public class User {
 	@Column(nullable = false)
 	private UserRole role;
 
+	@Column(name = "totp_secret_encrypted")
+	private String totpSecretEncrypted;
+
+	@Column(name = "totp_enabled", nullable = false)
+	private boolean totpEnabled;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -57,5 +63,18 @@ public class User {
 
 	public static String normalizeEmail(String email) {
 		return email.trim().toLowerCase(Locale.ROOT);
+	}
+
+	/** Guarda o segredo enrolado; o 2FA só passa a valer no confirm. */
+	public void startTotpEnrollment(String totpSecretEncrypted) {
+		this.totpSecretEncrypted = totpSecretEncrypted;
+		this.totpEnabled = false;
+	}
+
+	public void confirmTotpEnrollment() {
+		if (totpSecretEncrypted == null) {
+			throw new IllegalStateException("Nenhum enrolamento de TOTP em andamento");
+		}
+		this.totpEnabled = true;
 	}
 }
