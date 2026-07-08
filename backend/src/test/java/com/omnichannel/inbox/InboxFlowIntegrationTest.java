@@ -49,6 +49,9 @@ class InboxFlowIntegrationTest {
 	AuthService authService;
 
 	@Autowired
+	com.omnichannel.ai.AiSettingsService aiSettingsService;
+
+	@Autowired
 	JwtDecoder jwtDecoder;
 
 	@Autowired
@@ -73,6 +76,7 @@ class InboxFlowIntegrationTest {
 		tenantId = UUID.fromString(jwtDecoder.decode(tokens.accessToken()).getClaimAsString("tenant_id"));
 		TenantContext.setTenantId(tenantId);
 		channel = channelService.connect(tenantId, ChannelType.WEBCHAT, "Chat do Site", Map.of("k", "v"));
+		aiSettingsService.update(tenantId, false, new java.math.BigDecimal("0.7"), null); // IA fora destes testes
 		TenantContext.clear();
 	}
 

@@ -45,6 +45,9 @@ class InboxApiIntegrationTest {
 	AuthService authService;
 
 	@Autowired
+	com.omnichannel.ai.AiSettingsService aiSettingsService;
+
+	@Autowired
 	ChannelService channelService;
 
 	@Autowired
@@ -69,6 +72,7 @@ class InboxApiIntegrationTest {
 
 		TenantContext.setTenantId(tenantId);
 		channel = channelService.connect(tenantId, ChannelType.WEBCHAT, "Chat", Map.of("k", "v"));
+		aiSettingsService.update(tenantId, false, new java.math.BigDecimal("0.7"), null); // IA fora destes testes
 		TenantContext.clear();
 
 		gateway.receive(new InboundMessageReceived(tenantId, channel.getId(), ChannelType.WEBCHAT, "cliente-1",
