@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Módulo de IA (coração do produto): AI Worker consome mensagens materializadas, decide com RAG (Spring AI + pgvector, Claude para chat e OpenAI para embeddings) + histórico da conversa, e aplica o **portão de confiança** — acima do limiar responde sozinho, abaixo devolve à fila humana com resumo gerado.
+- **Livro-razão de resolução**: toda decisão autônoma (resposta ou handoff) vira registro auditável com confiança, com revisão humana via API — o diferencial central contra o gap marketing-vs-realidade do mercado.
+- Base de conhecimento com chunking e retrieval escopado por tenant; RLS aplicado até nos vetores (política sobre o metadata JSONB).
+- APIs: `POST/GET/DELETE /api/knowledge`, `GET/PUT /api/ai/settings` (limiar de confiança, tom, liga/desliga), `GET /api/ai/ledger` + `POST /api/ai/ledger/{id}/review`.
+- Idempotência da IA por mensagem-gatilho (reentrega do outbox nunca gera resposta dupla); chamadas de LLM fora de transação de banco.
 - Canal de webchat (primeiro canal real): endpoints públicos do widget (`POST/GET /api/webchat/{channelId}/messages`) com channelId como site key, rate limit por IP e por visitante, dedup por `clientMessageId` e polling incremental (`?after=`); adapter registrado no gateway (entrega = persistência + polling).
 - Guard de startup contra OSIV ligado — reutilizaria a conexão entre transações e quebraria o RLS silenciosamente.
 
