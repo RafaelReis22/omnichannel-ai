@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+### Adicionado
+- Inbox unificado (Fase 1): contatos com identidades por canal (histórico consolidado), conversas com status/atribuição/etiquetas, mensagens com deduplicação por id de provedor e reabertura automática de conversa resolvida.
+- Listener assíncrono do outbox materializando mensagens no inbox com contexto de tenant (RLS) e retry de corrida entre eventos concorrentes.
+- Fachada `OutboundMessenger` no Channel Gateway — resposta de agente sai pelo adapter do canal sem nenhum módulo tocar credenciais.
+- API do inbox: `GET /api/conversations` (filtros status/atribuído + paginação), `GET /api/conversations/{id}` e `/messages`, `POST .../assign|resolve|reply`, `PUT .../tags`, `GET /api/contacts/{id}` e `/conversations`.
+
 ## [0.1.0] — 2026-07-07
 
 Fase 0 (Fundação) completa — ver [roadmap](docs/02-plano-de-produto.md#roadmap).
