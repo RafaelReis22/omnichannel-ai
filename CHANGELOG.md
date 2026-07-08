@@ -17,4 +17,5 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Endpoints: `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/me`.
 - Channel Gateway (contrato da Fase 0): interface `ChannelAdapter` + registry, mensagens normalizadas entre canais (`MessageContent`, `InboundMessageReceived`), gateway de entrada publicando eventos pelo outbox do Modulith.
 - Rate limiting de força bruta em autenticação: limite por IP em `/api/auth/**` e bloqueio por conta após falhas seguidas de login (sucesso zera o contador), respostas 429 com `Retry-After`, backing em Redis.
+- Contrato OpenAPI (springdoc) em `/v3/api-docs` + Swagger UI, com esquema bearer — base do client TypeScript do frontend.
 - Gestão de canais: `POST/GET /api/channels` e `POST /api/channels/{id}/disable` (Admin), credenciais AES-256-GCM em repouso, RBAC por authority derivada do JWT.
