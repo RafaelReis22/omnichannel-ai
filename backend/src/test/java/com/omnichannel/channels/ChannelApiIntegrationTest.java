@@ -96,7 +96,7 @@ class ChannelApiIntegrationTest {
 		finally {
 			com.omnichannel.shared.tenancy.TenantContext.clear();
 		}
-		return authService.login(email, "senha-forte-3").accessToken();
+		return authService.login(email, "senha-forte-3").tokens().accessToken();
 	}
 
 	@Test

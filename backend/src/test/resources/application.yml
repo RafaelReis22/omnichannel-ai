@@ -5,6 +5,7 @@ app:
     credentials-key: "dGVzdGUtY2hhdmUtZGUtMzItYnl0ZXMtcGFyYS10c3Q="
   security:
     jwt-secret: "segredo-de-teste-nunca-usar-em-producao-0123456789"
+    totp-encryption-key: "dGVzdGUtY2hhdmUtZGUtMzItYnl0ZXMtcGFyYS10c3Q="
     access-token-ttl: 15m
     refresh-token-ttl: 7d
     rate-limit:
