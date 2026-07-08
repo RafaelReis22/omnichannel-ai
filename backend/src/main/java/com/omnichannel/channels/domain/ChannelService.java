@@ -53,6 +53,13 @@ public class ChannelService {
 	}
 
 	@Transactional(readOnly = true)
+	public Channel requireActiveChannelForSend(UUID channelId) {
+		return channelRepository.findById(channelId)
+			.filter(Channel::isActive)
+			.orElseThrow(() -> new ChannelNotAvailableException("Canal indisponível para envio: " + channelId));
+	}
+
+	@Transactional(readOnly = true)
 	public void requireActiveChannel(UUID channelId, ChannelType expectedType) {
 		Channel channel = channelRepository.findById(channelId)
 			.filter(Channel::isActive)

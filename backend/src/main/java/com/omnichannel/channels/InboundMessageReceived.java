@@ -8,15 +8,17 @@ import java.util.UUID;
  * Publicado pelo {@link InboundMessageGateway} via outbox do Modulith —
  * inbox e IA consomem este evento, nunca o payload bruto do provedor.
  *
- * @param externalContactId identidade do contato no canal de origem
- *                          (telefone no WhatsApp, PSID no Messenger...)
- * @param externalMessageId id da mensagem no provedor, para deduplicação
+ * @param externalContactId   identidade do contato no canal de origem
+ *                            (telefone no WhatsApp, PSID no Messenger...)
+ * @param externalContactName nome de exibição fornecido pelo canal, se houver
+ * @param externalMessageId   id da mensagem no provedor, para deduplicação
  */
 public record InboundMessageReceived(
 		UUID tenantId,
 		UUID channelId,
 		ChannelType channelType,
 		String externalContactId,
+		String externalContactName,
 		String externalMessageId,
 		MessageContent content,
 		Instant receivedAt) {
