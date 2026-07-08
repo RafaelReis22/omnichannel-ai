@@ -108,10 +108,28 @@ public class InboxService {
 		ContactIdentity identity = identityFor(conversation);
 		Message message = messageRepository
 			.save(Message.fromAgent(conversation.getTenantId(), conversation.getId(), content, agentUserId));
-		conversation.registerActivity(message.previewText(), message.getCreatedAt());
+		// @CreationTimestamp só preenche createdAt no flush — usar o relógio
+		// aqui, senão lastMessageAt ficaria nulo e quebraria a ordenação
+		conversation.registerActivity(message.previewText(), java.time.Instant.now());
 		outboundMessenger
 			.send(new OutboundMessage(conversation.getChannelId(), identity.getExternalId(), content));
 		return message;
+	}
+
+	/**
+	 * Thread do webchat vista pelo visitante (identificado por canal +
+	 * visitorId): mensagens após {@code after}, em ordem cronológica.
+	 * Roda sob o contexto de tenant já resolvido pelo ChannelDirectory.
+	 */
+	@Transactional(readOnly = true)
+	public List<Message> webchatThread(UUID channelId, String visitorId, java.time.Instant after) {
+		return contactIdentityRepository
+			.findByChannelTypeAndExternalId(com.omnichannel.channels.ChannelType.WEBCHAT, visitorId)
+			.flatMap(identity -> conversationRepository
+				.findFirstByContactIdAndChannelIdOrderByLastMessageAtDesc(identity.getContactId(), channelId))
+			.map(conversation -> messageRepository
+				.findTop50ByConversationIdAndCreatedAtGreaterThanOrderByCreatedAtAsc(conversation.getId(), after))
+			.orElse(List.of());
 	}
 
 	@Transactional(readOnly = true)

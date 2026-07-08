@@ -58,6 +58,8 @@ class SecurityConfig {
 				// requisição do cliente — sem isso o Security devolveria 401
 				.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 				.requestMatchers("/api/auth/**", "/actuator/health/**", "/actuator/health").permitAll()
+				// widget público de webchat: visitante anônimo, channelId como site key
+				.requestMatchers("/api/webchat/**").permitAll()
 				// contrato da API e UI de exploração; reavaliar exposição pública na Fase 4
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 				.anyRequest().authenticated())
