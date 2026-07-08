@@ -94,6 +94,20 @@ public class Conversation {
 		this.status = ConversationStatus.WITH_HUMAN;
 	}
 
+	/** A IA só assume conversa que não está com humano. */
+	public boolean isAvailableForAi() {
+		return status == ConversationStatus.OPEN || status == ConversationStatus.WITH_AI;
+	}
+
+	public void moveToAi() {
+		this.status = ConversationStatus.WITH_AI;
+	}
+
+	public void moveToHumanQueue() {
+		this.status = ConversationStatus.OPEN;
+		this.assigneeUserId = null;
+	}
+
 	public void resolve() {
 		this.status = ConversationStatus.RESOLVED;
 	}

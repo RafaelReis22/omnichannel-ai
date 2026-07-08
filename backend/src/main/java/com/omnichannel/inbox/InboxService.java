@@ -36,15 +36,18 @@ public class InboxService {
 	private final ConversationRepository conversationRepository;
 	private final MessageRepository messageRepository;
 	private final OutboundMessenger outboundMessenger;
+	private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
 	public InboxService(ContactRepository contactRepository, ContactIdentityRepository contactIdentityRepository,
 			ConversationRepository conversationRepository, MessageRepository messageRepository,
-			OutboundMessenger outboundMessenger) {
+			OutboundMessenger outboundMessenger,
+			org.springframework.context.ApplicationEventPublisher eventPublisher) {
 		this.contactRepository = contactRepository;
 		this.contactIdentityRepository = contactIdentityRepository;
 		this.conversationRepository = conversationRepository;
 		this.messageRepository = messageRepository;
 		this.outboundMessenger = outboundMessenger;
+		this.eventPublisher = eventPublisher;
 	}
 
 	/**
@@ -62,6 +65,31 @@ public class InboxService {
 		Message message = messageRepository.save(Message.fromContact(event.tenantId(), conversation.getId(),
 				event.content(), event.externalMessageId()));
 		conversation.registerActivity(message.previewText(), event.receivedAt());
+		// gatilho do AI Worker — pelo outbox, na mesma transação
+		eventPublisher.publishEvent(new ContactMessageRegistered(event.tenantId(), conversation.getId(),
+				message.getId(), message.getText()));
+	}
+
+	/**
+	 * Resposta autônoma da IA: persiste com confiança, marca a conversa como
+	 * WITH_AI e envia pelo canal de origem. Chamado apenas pelo AI Worker.
+	 */
+	@Transactional
+	public Message recordAiReply(UUID conversationId, MessageContent content, java.math.BigDecimal confidence) {
+		Conversation conversation = getConversation(conversationId);
+		ContactIdentity identity = identityFor(conversation);
+		Message message = messageRepository
+			.save(Message.fromAi(conversation.getTenantId(), conversation.getId(), content, confidence));
+		conversation.registerActivity(message.previewText(), java.time.Instant.now());
+		conversation.moveToAi();
+		outboundMessenger.send(new OutboundMessage(conversation.getChannelId(), identity.getExternalId(), content));
+		return message;
+	}
+
+	/** Handoff: devolve a conversa à fila humana (status OPEN, sem dono). */
+	@Transactional
+	public void markNeedsHuman(UUID conversationId) {
+		getConversation(conversationId).moveToHumanQueue();
 	}
 
 	@Transactional(readOnly = true)
@@ -78,6 +106,13 @@ public class InboxService {
 	@Transactional(readOnly = true)
 	public Page<Message> messagesOf(UUID conversationId, Pageable pageable) {
 		return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
+	}
+
+	/** Últimas mensagens em ordem cronológica — o contexto que a IA lê. */
+	@Transactional(readOnly = true)
+	public List<Message> recentMessages(UUID conversationId) {
+		List<Message> newestFirst = messageRepository.findTop10ByConversationIdOrderByCreatedAtDesc(conversationId);
+		return newestFirst.reversed();
 	}
 
 	@Transactional

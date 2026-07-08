@@ -15,5 +15,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 	List<Message> findTop50ByConversationIdAndCreatedAtGreaterThanOrderByCreatedAtAsc(UUID conversationId,
 			Instant after);
 
+	List<Message> findTop10ByConversationIdOrderByCreatedAtDesc(UUID conversationId);
+
 	boolean existsByExternalMessageId(String externalMessageId);
 }
