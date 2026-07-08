@@ -4,16 +4,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.omnichannel.TestcontainersConfiguration;
-import com.omnichannel.channels.ChannelAdapter;
-import com.omnichannel.channels.ChannelCredentials;
 import com.omnichannel.channels.ChannelType;
 import com.omnichannel.channels.InboundMessageGateway;
 import com.omnichannel.channels.InboundMessageReceived;
 import com.omnichannel.channels.MessageContent;
-import com.omnichannel.channels.OutboundMessage;
 import com.omnichannel.channels.domain.Channel;
 import com.omnichannel.channels.domain.ChannelService;
 import com.omnichannel.shared.tenancy.TenantContext;
@@ -23,9 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,31 +30,13 @@ import org.springframework.http.ResponseEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/** API do inbox de ponta a ponta, com adapter fake capturando envios. */
+/**
+ * API do inbox de ponta a ponta sobre o adapter real de webchat (envio =
+ * persistência; a visão do visitante é coberta em WebchatFlowIntegrationTest).
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import({ TestcontainersConfiguration.class, InboxApiIntegrationTest.FakeWebchatAdapter.class })
+@Import(TestcontainersConfiguration.class)
 class InboxApiIntegrationTest {
-
-	@TestConfiguration(proxyBeanMethods = false)
-	static class FakeWebchatAdapter {
-
-		static final List<OutboundMessage> SENT = new CopyOnWriteArrayList<>();
-
-		@Bean
-		ChannelAdapter fakeWebchat() {
-			return new ChannelAdapter() {
-				@Override
-				public ChannelType type() {
-					return ChannelType.WEBCHAT;
-				}
-
-				@Override
-				public void send(OutboundMessage message, ChannelCredentials credentials) {
-					SENT.add(message);
-				}
-			};
-		}
-	}
 
 	@Autowired
 	TestRestTemplate rest;
@@ -84,7 +60,6 @@ class InboxApiIntegrationTest {
 
 	@BeforeEach
 	void preparaTenantCanalEConversa() {
-		FakeWebchatAdapter.SENT.clear();
 		var tokens = authService.signup("Empresa API Inbox", "Admin", "api-inbox-" + UUID.randomUUID() + "@x.com",
 				"senha-forte-1");
 		adminToken = tokens.accessToken();
@@ -146,11 +121,7 @@ class InboxApiIntegrationTest {
 		assertThat(reply.getBody()).containsEntry("sender", "AGENT")
 			.containsEntry("senderUserId", adminUserId.toString());
 
-		// saiu pelo adapter do canal
-		assertThat(FakeWebchatAdapter.SENT).hasSize(1);
-		assertThat(FakeWebchatAdapter.SENT.getFirst().externalContactId()).isEqualTo("cliente-1");
-
-		// e está no histórico da conversa
+		// está no histórico da conversa (para webchat, entrega = persistência)
 		ResponseEntity<Map> messages = get("/api/conversations/" + conversationId + "/messages");
 		assertThat((List<Map>) messages.getBody().get("content")).hasSize(2);
 	}
