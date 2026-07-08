@@ -9,6 +9,7 @@ import { tokenStore } from "@/lib/auth";
 
 const NAV = [
   { href: "/inbox", label: "Inbox" },
+  { href: "/pipeline", label: "Pipeline" },
   { href: "/canais", label: "Canais" },
   { href: "/conhecimento", label: "Conhecimento" },
   { href: "/ia", label: "IA & Livro-razão" },

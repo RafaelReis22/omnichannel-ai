@@ -90,3 +90,23 @@ export interface LedgerEntry {
   reviewedByHuman: boolean;
   createdAt: string;
 }
+
+export interface DealCard {
+  id: string;
+  contactId: string;
+  contactName: string;
+  title: string;
+  value: number | null;
+  createdAt: string;
+}
+
+export interface StageColumn {
+  id: string;
+  name: string;
+  position: number;
+  deals: DealCard[];
+}
+
+export interface Board {
+  stages: StageColumn[];
+}

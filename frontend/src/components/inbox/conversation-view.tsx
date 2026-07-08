@@ -49,6 +49,10 @@ export function ConversationView({ conversationId }: { conversationId: string })
     mutationFn: () => api.resolve(conversationId),
     onSuccess: invalidate,
   });
+  const dealMutation = useMutation({
+    mutationFn: () =>
+      api.createDeal({ contactId: conversation!.contactId, title: `Negócio — ${contact?.name ?? "contato"}` }),
+  });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -69,6 +73,14 @@ export function ConversationView({ conversationId }: { conversationId: string })
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <StatusChip status={conversation.status} />
+          <button
+            onClick={() => dealMutation.mutate()}
+            disabled={dealMutation.isPending || dealMutation.isSuccess}
+            title="Cria um negócio no pipeline com este contato"
+            className="rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm font-medium transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
+          >
+            {dealMutation.isSuccess ? "No pipeline ✓" : "+ Negócio"}
+          </button>
           {!mine && conversation.status !== "RESOLVED" && (
             <button
               onClick={() => assignMutation.mutate()}

@@ -1,6 +1,8 @@
 import { tokenStore } from "./auth";
 import type {
   AiSettings,
+  Board,
+  DealCard,
   Channel,
   Contact,
   Conversation,
@@ -118,4 +120,12 @@ export const api = {
     request<AiSettings>("/api/ai/settings", { method: "PUT", body: JSON.stringify(body) }),
   ledger: (page = 0) => request<Page<LedgerEntry>>(`/api/ai/ledger?page=${page}`),
   reviewLedger: (id: string) => request<LedgerEntry>(`/api/ai/ledger/${id}/review`, { method: "POST" }),
+
+  // --- CRM ---
+  board: () => request<Board>("/api/crm/board"),
+  createDeal: (body: { contactId: string; title: string; value?: number | null; stageId?: string }) =>
+    request<DealCard>("/api/crm/deals", { method: "POST", body: JSON.stringify(body) }),
+  moveDeal: (dealId: string, stageId: string) =>
+    request<DealCard>(`/api/crm/deals/${dealId}/move`, { method: "POST", body: JSON.stringify({ stageId }) }),
+  deleteDeal: (dealId: string) => request<void>(`/api/crm/deals/${dealId}`, { method: "DELETE" }),
 };
