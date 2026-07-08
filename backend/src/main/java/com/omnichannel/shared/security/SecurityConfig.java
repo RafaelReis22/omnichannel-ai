@@ -39,7 +39,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(SecurityProperties.class)
+@EnableConfigurationProperties({ SecurityProperties.class, RateLimitProperties.class })
 class SecurityConfig {
 
 	@Bean

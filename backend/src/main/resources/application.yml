@@ -49,10 +49,18 @@ app:
     jwt-secret: ${JWT_SECRET:}
     access-token-ttl: ${JWT_ACCESS_TTL_MINUTES:15}m
     refresh-token-ttl: ${JWT_REFRESH_TTL_DAYS:7}d
+    rate-limit:
+      # força bruta em auth (docs/06-seguranca.md)
+      ip-limit: 20
+      ip-window: 1m
+      email-failure-limit: 5
+      email-failure-window: 15m
 
 server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful
+  # honra X-Forwarded-For do load balancer da plataforma (docs/07-deploy.md)
+  forward-headers-strategy: framework
 
 management:
   endpoints:
