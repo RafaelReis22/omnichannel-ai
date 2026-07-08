@@ -55,13 +55,14 @@ public class AuthService {
 	private final SecurityProperties securityProperties;
 	private final RateLimiter rateLimiter;
 	private final RateLimitProperties rateLimitProperties;
+	private final TwoFactorService twoFactorService;
 	private final TransactionTemplate transactionTemplate;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public AuthService(TenantRepository tenantRepository, UserRepository userRepository,
 			RefreshTokenRepository refreshTokenRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
 			SecurityProperties securityProperties, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties,
-			PlatformTransactionManager transactionManager) {
+			TwoFactorService twoFactorService, PlatformTransactionManager transactionManager) {
 		this.tenantRepository = tenantRepository;
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
@@ -70,6 +71,7 @@ public class AuthService {
 		this.securityProperties = securityProperties;
 		this.rateLimiter = rateLimiter;
 		this.rateLimitProperties = rateLimitProperties;
+		this.twoFactorService = twoFactorService;
 		this.transactionTemplate = new TransactionTemplate(transactionManager);
 		this.unknownUserDummyHash = passwordEncoder.encode(generateRefreshTokenValue());
 	}
@@ -87,7 +89,7 @@ public class AuthService {
 		}));
 	}
 
-	public AuthTokens login(String email, String rawPassword) {
+	public LoginResult login(String email, String rawPassword) {
 		String normalizedEmail = User.normalizeEmail(email);
 		// Limite por conta-alvo: só FALHAS contam e o sucesso zera — proteção
 		// contra força bruta sem permitir que um atacante tranque a vítima
@@ -97,7 +99,7 @@ public class AuthService {
 			throw new RateLimitExceededException("Muitas tentativas para esta conta. Tente novamente mais tarde.",
 					rateLimiter.secondsUntilReset(failureKey, rateLimitProperties.emailFailureWindow()));
 		}
-		AuthTokens tokens = TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> {
+		LoginResult result = TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> {
 			User user = userRepository.findByEmail(normalizedEmail).orElse(null);
 			if (user == null) {
 				passwordEncoder.matches(rawPassword, unknownUserDummyHash);
@@ -106,14 +108,61 @@ public class AuthService {
 			if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
 				return null;
 			}
-			return issueTokens(user);
+			if (user.isTotpEnabled()) {
+				// senha certa, mas tokens só depois do código 2FA
+				return LoginResult.mfaChallenge(jwtService.generateMfaChallengeToken(user.getId()));
+			}
+			return LoginResult.authenticated(issueTokens(user));
 		}));
-		if (tokens == null) {
+		if (result == null) {
 			rateLimiter.record(failureKey, rateLimitProperties.emailFailureWindow());
 			throw new AuthenticationFailedException("Credenciais inválidas");
 		}
 		rateLimiter.reset(failureKey);
+		return result;
+	}
+
+	/** Segunda etapa do login com 2FA: troca desafio + código por tokens. */
+	public AuthTokens verifyMfaChallenge(String mfaToken, String code) {
+		java.util.UUID userId = twoFactorService.challengeTokenUserId(mfaToken);
+		// código de 6 dígitos é forçável — mesmo regime de bloqueio do login
+		String failureKey = "rl:auth:mfa:" + userId;
+		if (rateLimiter.isBlocked(failureKey, rateLimitProperties.emailFailureLimit())) {
+			throw new RateLimitExceededException("Muitas tentativas de código. Tente novamente mais tarde.",
+					rateLimiter.secondsUntilReset(failureKey, rateLimitProperties.emailFailureWindow()));
+		}
+		AuthTokens tokens = TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> {
+			User user = userRepository.findById(userId).orElse(null);
+			if (user == null || !user.isTotpEnabled()
+					|| !twoFactorService.verifyTotpOrRecoveryCode(user, code)) {
+				return null;
+			}
+			return issueTokens(user);
+		}));
+		if (tokens == null) {
+			rateLimiter.record(failureKey, rateLimitProperties.emailFailureWindow());
+			throw new AuthenticationFailedException("Código 2FA inválido");
+		}
+		rateLimiter.reset(failureKey);
 		return tokens;
+	}
+
+	/**
+	 * Enrolamento de 2FA — rotas autenticadas: o contexto de tenant já foi
+	 * definido pelo interceptor, então @Transactional é seguro aqui.
+	 */
+	@org.springframework.transaction.annotation.Transactional
+	public TwoFactorService.TotpEnrollment startTotpEnrollment(java.util.UUID userId) {
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new AuthenticationFailedException("Usuário não encontrado"));
+		return twoFactorService.startEnrollment(user);
+	}
+
+	@org.springframework.transaction.annotation.Transactional
+	public java.util.List<String> confirmTotpEnrollment(java.util.UUID userId, String code) {
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new AuthenticationFailedException("Usuário não encontrado"));
+		return twoFactorService.confirmEnrollment(user, code);
 	}
 
 	public AuthTokens refresh(String refreshTokenValue) {

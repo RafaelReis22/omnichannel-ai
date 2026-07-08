@@ -47,6 +47,8 @@ app:
   security:
     # Falha no startup se ausente — gere com: openssl rand -base64 64
     jwt-secret: ${JWT_SECRET:}
+    # AES-256 p/ segredos TOTP em repouso — gere com: openssl rand -base64 32
+    totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
     access-token-ttl: ${JWT_ACCESS_TTL_MINUTES:15}m
     refresh-token-ttl: ${JWT_REFRESH_TTL_DAYS:7}d
     rate-limit:

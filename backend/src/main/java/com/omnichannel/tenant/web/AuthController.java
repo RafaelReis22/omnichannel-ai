@@ -38,11 +38,17 @@ class AuthController {
 	record RefreshRequest(@NotBlank String refreshToken) {
 	}
 
+	record MfaVerifyRequest(@NotBlank String mfaToken, @NotBlank String code) {
+	}
+
 	record TokenResponse(String accessToken, String refreshToken, long expiresIn, String tokenType) {
 		static TokenResponse from(AuthTokens tokens) {
 			return new TokenResponse(tokens.accessToken(), tokens.refreshToken(),
 					tokens.accessTokenExpiresInSeconds(), "Bearer");
 		}
+	}
+
+	record MfaChallengeResponse(boolean mfaRequired, String mfaToken) {
 	}
 
 	@PostMapping("/signup")
@@ -53,8 +59,17 @@ class AuthController {
 	}
 
 	@PostMapping("/login")
-	TokenResponse login(@Valid @RequestBody LoginRequest request) {
-		return TokenResponse.from(authService.login(request.email(), request.password()));
+	Object login(@Valid @RequestBody LoginRequest request) {
+		var result = authService.login(request.email(), request.password());
+		if (result.requiresMfa()) {
+			return new MfaChallengeResponse(true, result.mfaChallengeToken());
+		}
+		return TokenResponse.from(result.tokens());
+	}
+
+	@PostMapping("/2fa/verify")
+	TokenResponse verifyMfa(@Valid @RequestBody MfaVerifyRequest request) {
+		return TokenResponse.from(authService.verifyMfaChallenge(request.mfaToken(), request.code()));
 	}
 
 	@PostMapping("/refresh")
