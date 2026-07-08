@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Canal de webchat (primeiro canal real): endpoints públicos do widget (`POST/GET /api/webchat/{channelId}/messages`) com channelId como site key, rate limit por IP e por visitante, dedup por `clientMessageId` e polling incremental (`?after=`); adapter registrado no gateway (entrega = persistência + polling).
+- Guard de startup contra OSIV ligado — reutilizaria a conexão entre transações e quebraria o RLS silenciosamente.
+
+### Corrigido
+- `lastMessageAt` da conversa ficava nulo na resposta de agente (leitura de `createdAt` antes do flush).
+
+### Adicionado (anterior)
 - Inbox unificado (Fase 1): contatos com identidades por canal (histórico consolidado), conversas com status/atribuição/etiquetas, mensagens com deduplicação por id de provedor e reabertura automática de conversa resolvida.
 - Listener assíncrono do outbox materializando mensagens no inbox com contexto de tenant (RLS) e retry de corrida entre eventos concorrentes.
 - Fachada `OutboundMessenger` no Channel Gateway — resposta de agente sai pelo adapter do canal sem nenhum módulo tocar credenciais.

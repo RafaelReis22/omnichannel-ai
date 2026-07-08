@@ -34,6 +34,12 @@ docker compose up -d                  # Postgres + Redis + RabbitMQ locais
 9. Pense como desenvolvedor sênior: questione requisitos estranhos, sugira melhorias quando encontrar oportunidades.
 10. Toda decisão considera segurança, performance e escalabilidade — mas sem overengineering (gatilhos de escala documentados em `docs/05-escalabilidade.md`).
 
+## Armadilhas conhecidas (aprendidas em produção de código)
+
+- **OSIV é proibido** (`spring.jpa.open-in-view: false`): ele segura a conexão pela requisição inteira e a conexão preparada pelo primeiro contexto (auth) seria reusada pelos seguintes (tenant), quebrando o RLS silenciosamente. Há um guard no `TenancyConfig` que falha o startup se religado.
+- **Nunca criar `src/test/resources/application.yml|properties`**: arquivo com nome base "application" sombreia o `application.yml` principal inteiro (sem merge). Overrides de teste vivem em `application-test.properties` (profile `test`, ativado pelo surefire).
+- **Renomeou/deletou resource? `./mvnw clean`**: o Maven não remove de `target/` recursos deletados do source — testes passam/falham contra arquivos fantasma.
+
 ## Regras específicas
 
 - Toda tabela de negócio tem `tenant_id` + política RLS. Teste de isolamento multi-tenant é obrigatório para qualquer repositório novo.
