@@ -5,6 +5,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Widget de webchat embeddável (`/widget.js`): arquivo único vanilla JS com Shadow DOM (não conflita com o site do cliente), balão flutuante com contador de não lidas, polling, dedup por clientMessageId, eco otimista reconciliado e dark mode; página de demonstração em `/widget-demo.html`.
+- Página Canais no dashboard: conectar canais e copiar o snippet de embed pronto.
 - Dashboard (frontend/, Next.js 16 + React 19 + Tailwind 4): login com fluxo 2FA, signup de empresa, inbox com fila filtrável por status, conversa com resposta/assumir/resolver, base de conhecimento, configurações da IA e livro-razão com revisão — design system próprio com status semânticos e dark mode.
 - CORS configurável para o dashboard (`CORS_ALLOWED_ORIGINS`) e aberto no webchat público (widget roda no site do cliente).
 - Módulo de IA (coração do produto): AI Worker consome mensagens materializadas, decide com RAG (Spring AI + pgvector, Claude para chat e OpenAI para embeddings) + histórico da conversa, e aplica o **portão de confiança** — acima do limiar responde sozinho, abaixo devolve à fila humana com resumo gerado.
