@@ -1,5 +1,8 @@
 # Configuração exclusiva de teste — nunca usada fora do surefire.
 app:
+  channels:
+    # base64 de exatamente 32 bytes, valor de teste
+    credentials-key: "dGVzdGUtY2hhdmUtZGUtMzItYnl0ZXMtcGFyYS10c3Q="
   security:
     jwt-secret: "segredo-de-teste-nunca-usar-em-producao-0123456789"
     access-token-ttl: 15m

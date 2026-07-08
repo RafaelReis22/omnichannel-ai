@@ -9,15 +9,17 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 import jakarta.servlet.DispatcherType;
 
+import java.util.List;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -25,6 +27,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -50,11 +53,21 @@ class SecurityConfig {
 				.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 				.requestMatchers("/api/auth/**", "/actuator/health/**", "/actuator/health").permitAll()
 				.anyRequest().authenticated())
-			.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+			.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 			.exceptionHandling(handling -> handling.defaultAuthenticationEntryPointFor(
 					(request, response, exception) -> response.setStatus(HttpStatus.UNAUTHORIZED.value()),
 					AntPathRequestMatcher.antMatcher("/api/**")))
 			.build();
+	}
+
+	/** Converte a claim {@code role} do nosso JWT em authority ROLE_* — sem isso, hasRole nunca casa. */
+	private static JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+		converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+			String role = jwt.getClaimAsString(JwtService.CLAIM_ROLE);
+			return role == null ? List.of() : List.of(new SimpleGrantedAuthority("ROLE_" + role));
+		});
+		return converter;
 	}
 
 	@Bean
