@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loja Exemplo — demonstração do widget</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    header { background: #22303f; color: #fff; padding: 2.5rem 2rem; }
+    main { max-width: 720px; margin: 0 auto; padding: 2rem; line-height: 1.7; color: #333; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Loja Exemplo</h1>
+    <p>Este é um site fictício de cliente — o balão no canto é o widget do omnichannel-ai.</p>
+  </header>
+  <main>
+    <h2>Como testar</h2>
+    <ol>
+      <li>No dashboard, crie um canal de <strong>webchat</strong> e copie o ID.</li>
+      <li>Abra esta página com <code>?channelId=SEU_ID</code> na URL.</li>
+      <li>Converse pelo balão; a conversa aparece no inbox do dashboard.</li>
+    </ol>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const channelId = params.get("channelId");
+    if (channelId) {
+      const s = document.createElement("script");
+      s.src = "/widget.js";
+      s.dataset.channelId = channelId;
+      s.dataset.apiUrl = params.get("apiUrl") || "http://localhost:8080";
+      document.body.appendChild(s);
+    } else {
+      document.querySelector("main").insertAdjacentHTML(
+        "beforeend",
+        '<p style="color:#b91c1c"><strong>Falta o parâmetro ?channelId=…</strong></p>'
+      );
+    }
+  </script>
+</body>
+</html>
