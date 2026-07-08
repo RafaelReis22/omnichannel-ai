@@ -40,6 +40,35 @@ spring:
     virtual:
       enabled: true
 
+  ai:
+    model:
+      chat: anthropic
+      embedding: openai
+      # tipos não usados: sem eles o starter OpenAI exigiria a chave no boot
+      audio:
+        speech: none
+        transcription: none
+      image: none
+      moderation: none
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: claude-sonnet-4-20250514
+          max-tokens: 1024
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      embedding:
+        options:
+          model: text-embedding-3-small
+    vectorstore:
+      pgvector:
+        # Flyway é o dono do schema (V8); dimensão = text-embedding-3-small
+        initialize-schema: false
+        dimensions: 1536
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
+
 app:
   channels:
     # AES-256 p/ credenciais de canal em repouso — gere com: openssl rand -base64 32
