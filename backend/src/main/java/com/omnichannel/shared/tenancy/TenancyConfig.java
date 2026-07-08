@@ -14,6 +14,25 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class TenancyConfig {
 
+	/**
+	 * OSIV segura a conexão pela requisição inteira — a conexão preparada
+	 * pelo primeiro contexto (ex.: auth) seria reutilizada pelos seguintes
+	 * (ex.: tenant), quebrando silenciosamente o RLS (ADR-0002). A checagem
+	 * usa a presença real do interceptor (verdade do contexto, imune a
+	 * pegadinhas de property source) e falha o startup.
+	 */
+	@Bean
+	static org.springframework.beans.factory.SmartInitializingSingleton osivGuard(
+			org.springframework.beans.factory.ObjectProvider<org.springframework.orm.jpa.support.OpenEntityManagerInViewInterceptor> osivInterceptor) {
+		return () -> {
+			if (osivInterceptor.getIfAvailable() != null) {
+				throw new IllegalStateException(
+						"spring.jpa.open-in-view deve ser false: OSIV reutiliza a conexão entre transações "
+								+ "e quebra a propagação de contexto do RLS (ADR-0002)");
+			}
+		};
+	}
+
 	@Bean
 	static BeanPostProcessor tenantAwareDataSourceWrapper() {
 		return new BeanPostProcessor() {
