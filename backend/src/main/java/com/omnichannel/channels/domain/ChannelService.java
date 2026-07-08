@@ -53,6 +53,13 @@ public class ChannelService {
 	}
 
 	@Transactional(readOnly = true)
+	public java.util.Optional<Channel> findActivePublic(UUID channelId, ChannelType expectedType) {
+		return channelRepository.findById(channelId)
+			.filter(Channel::isActive)
+			.filter(channel -> channel.getType() == expectedType);
+	}
+
+	@Transactional(readOnly = true)
 	public Channel requireActiveChannelForSend(UUID channelId) {
 		return channelRepository.findById(channelId)
 			.filter(Channel::isActive)
