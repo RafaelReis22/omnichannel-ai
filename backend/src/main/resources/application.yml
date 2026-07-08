@@ -3,7 +3,7 @@ spring:
     name: omnichannel-backend
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/omnichannel}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/omnichannel}
     username: ${DATABASE_USERNAME:omnichannel}
     password: ${DATABASE_PASSWORD:}
 
@@ -19,7 +19,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6380}
       password: ${REDIS_PASSWORD:}
 
   rabbitmq:
@@ -80,6 +80,7 @@ app:
     totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
     access-token-ttl: ${JWT_ACCESS_TTL_MINUTES:15}m
     refresh-token-ttl: ${JWT_REFRESH_TTL_DAYS:7}d
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
     rate-limit:
       # força bruta em auth (docs/06-seguranca.md)
       ip-limit: 20

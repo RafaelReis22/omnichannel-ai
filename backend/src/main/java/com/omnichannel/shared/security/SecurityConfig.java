@@ -51,6 +51,8 @@ class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
+			.cors(cors -> {
+			})
 			.csrf(csrf -> csrf.disable())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
@@ -78,6 +80,32 @@ class SecurityConfig {
 			return role == null ? List.of() : List.of(new SimpleGrantedAuthority("ROLE_" + role));
 		});
 		return converter;
+	}
+
+	/**
+	 * CORS para o dashboard (origens via CORS_ALLOWED_ORIGINS). O webchat
+	 * público também depende disto: o widget roda no site do cliente.
+	 */
+	@Bean
+	org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource(
+			@org.springframework.beans.factory.annotation.Value("${app.security.cors-allowed-origins:http://localhost:3000}") List<String> allowedOrigins) {
+		var dashboard = new org.springframework.web.cors.CorsConfiguration();
+		dashboard.setAllowedOrigins(allowedOrigins);
+		dashboard.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		dashboard.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+		dashboard.setMaxAge(3600L);
+
+		// widget: qualquer site pode falar com o webchat (canal público por design)
+		var webchat = new org.springframework.web.cors.CorsConfiguration();
+		webchat.setAllowedOriginPatterns(List.of("*"));
+		webchat.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+		webchat.setAllowedHeaders(List.of("Content-Type"));
+		webchat.setMaxAge(3600L);
+
+		var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/api/webchat/**", webchat);
+		source.registerCorsConfiguration("/**", dashboard);
+		return source;
 	}
 
 	@Bean
