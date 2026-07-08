@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-07-07
+
+Fase 0 (Fundação) completa — ver [roadmap](docs/02-plano-de-produto.md#roadmap).
+
 ### Adicionado
 - Plano de desenvolvimento completo (`docs/01` a `09`): visão, MVP, backlog, roadmap, arquitetura, stack, escalabilidade, segurança, deploy, testes e documentação.
 - ADR-0001: backend em Java 21 + Spring Boot 3.5.x (substitui o plano original NestJS).
@@ -14,8 +18,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - CI no GitHub Actions (build + testes com Testcontainers + validação da imagem Docker), Dependabot, CODEOWNERS, templates de issue/PR, labels e milestones por fase do roadmap.
 - Multi-tenant com Row-Level Security real (ADR-0002): papel `app_runtime` sem bypass, políticas negar-por-padrão, `TenantAwareDataSource` propagando o contexto — com testes de isolamento contra Postgres real.
 - Autenticação JWT: signup (tenant + admin), login e refresh com rotação e revogação; senhas Argon2id; refresh tokens persistidos como hash SHA-256; proteção contra enumeração de e-mails.
-- Endpoints: `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/me`.
+- 2FA por TOTP (RFC 6238): enrolamento com QR (`POST /api/2fa/setup` e `/confirm`), login em duas etapas com token de desafio efêmero (rejeitado em rotas protegidas), códigos de recuperação de uso único, segredo criptografado em repouso.
+- Rate limiting de força bruta em autenticação: limite por IP em `/api/auth/**`, bloqueio por conta após falhas seguidas de login e de código MFA (sucesso zera o contador), respostas 429 com `Retry-After`, backing em Redis.
 - Channel Gateway (contrato da Fase 0): interface `ChannelAdapter` + registry, mensagens normalizadas entre canais (`MessageContent`, `InboundMessageReceived`), gateway de entrada publicando eventos pelo outbox do Modulith.
-- Rate limiting de força bruta em autenticação: limite por IP em `/api/auth/**` e bloqueio por conta após falhas seguidas de login (sucesso zera o contador), respostas 429 com `Retry-After`, backing em Redis.
-- Contrato OpenAPI (springdoc) em `/v3/api-docs` + Swagger UI, com esquema bearer — base do client TypeScript do frontend.
 - Gestão de canais: `POST/GET /api/channels` e `POST /api/channels/{id}/disable` (Admin), credenciais AES-256-GCM em repouso, RBAC por authority derivada do JWT.
+- Contrato OpenAPI (springdoc) em `/v3/api-docs` + Swagger UI, com esquema bearer — base do client TypeScript do frontend.
+- Endpoints: `POST /api/auth/{signup,login,refresh}`, `POST /api/auth/2fa/verify`, `POST /api/2fa/{setup,confirm}`, `GET /api/me`, `POST/GET /api/channels`, `POST /api/channels/{id}/disable`.
