@@ -89,7 +89,7 @@ class ChannelModuleIntegrationTest {
 		TenantContext.clear(); // webhook não tem JWT — o gateway assume o contexto sozinho
 
 		InboundMessageReceived message = new InboundMessageReceived(tenantId, channel.getId(), ChannelType.WEBCHAT,
-				"visitante-123", "msg-1", MessageContent.text("Olá, quero saber o preço"), Instant.now());
+				"visitante-123", "Visitante", "msg-1", MessageContent.text("Olá, quero saber o preço"), Instant.now());
 		inboundMessageGateway.receive(message);
 
 		List<InboundMessageReceived> published = applicationEvents.stream(InboundMessageReceived.class).toList();
@@ -104,7 +104,7 @@ class ChannelModuleIntegrationTest {
 		TenantContext.clear();
 
 		InboundMessageReceived message = new InboundMessageReceived(tenantId, channel.getId(), ChannelType.WEBCHAT,
-				"visitante-123", "msg-2", MessageContent.text("oi"), Instant.now());
+				"visitante-123", "Visitante", "msg-2", MessageContent.text("oi"), Instant.now());
 		assertThatThrownBy(() -> inboundMessageGateway.receive(message))
 			.isInstanceOf(ChannelNotAvailableException.class);
 		assertThat(applicationEvents.stream(InboundMessageReceived.class)).isEmpty();
@@ -116,7 +116,7 @@ class ChannelModuleIntegrationTest {
 		TenantContext.clear();
 
 		InboundMessageReceived message = new InboundMessageReceived(tenantId, channel.getId(), ChannelType.WHATSAPP,
-				"555199999", "msg-3", MessageContent.text("oi"), Instant.now());
+				"555199999", "Cliente", "msg-3", MessageContent.text("oi"), Instant.now());
 		assertThatThrownBy(() -> inboundMessageGateway.receive(message))
 			.isInstanceOf(ChannelNotAvailableException.class);
 	}
