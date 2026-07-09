@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-08
+
+MVP self-contained completo (Fase 1 parcial): inbox, IA auditável, webchat com widget e CRM.
+
 ### Adicionado
 - CRM simples (MVP): pipeline de vendas com estágios configuráveis por tenant (padrões no primeiro acesso), negócios ligados a contatos, board kanban `GET /api/crm/board` e CRUD de estágios/negócios; frontend com drag-and-drop nativo, total do funil em BRL e botão "+ Negócio" no cabeçalho da conversa.
 - Widget de webchat embeddável (`/widget.js`): arquivo único vanilla JS com Shadow DOM (não conflita com o site do cliente), balão flutuante com contador de não lidas, polling, dedup por clientMessageId, eco otimista reconciliado e dark mode; página de demonstração em `/widget-demo.html`.

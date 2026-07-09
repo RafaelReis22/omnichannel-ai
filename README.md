@@ -11,12 +11,13 @@ Empresas conectam WhatsApp, Instagram, Messenger, e-mail e chat do site em um ú
 ## Desenvolvimento local
 
 ```bash
-docker compose up -d            # Postgres + Redis + RabbitMQ
-cd backend && ./mvnw verify     # build + testes + verificação de arquitetura
-cd backend && ./mvnw spring-boot:run
+docker compose up -d                # Postgres (host 5433) + Redis (host 6380) + RabbitMQ
+cd backend && ./mvnw verify         # build + testes + verificação de arquitetura
+cd backend && ./mvnw spring-boot:run    # exige JWT_SECRET, chaves AES e chaves de IA no ambiente
+cd frontend && npm install && npm run dev   # dashboard em http://localhost:3000
 ```
 
-Variáveis de ambiente: copie `.env.example` para `.env` e preencha. Regras do projeto: [CLAUDE.md](CLAUDE.md) · Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).
+Variáveis de ambiente: copie `.env.example` para `.env` e preencha (idem `frontend/.env.example`). Regras e armadilhas conhecidas: [CLAUDE.md](CLAUDE.md) · Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentação
 
