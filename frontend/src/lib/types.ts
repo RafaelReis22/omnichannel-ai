@@ -110,3 +110,18 @@ export interface StageColumn {
 export interface Board {
   stages: StageColumn[];
 }
+
+export interface SearchHit {
+  type: "MESSAGE" | "CONTACT";
+  conversationId: string | null;
+  contactId: string;
+  snippet: string;
+  occurredAt: string;
+}
+
+export interface ConversationNote {
+  id: string;
+  authorUserId: string;
+  text: string;
+  createdAt: string;
+}

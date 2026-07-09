@@ -2,7 +2,9 @@ import { tokenStore } from "./auth";
 import type {
   AiSettings,
   Board,
+  ConversationNote,
   DealCard,
+  SearchHit,
   Channel,
   Contact,
   Conversation,
@@ -128,4 +130,14 @@ export const api = {
   moveDeal: (dealId: string, stageId: string) =>
     request<DealCard>(`/api/crm/deals/${dealId}/move`, { method: "POST", body: JSON.stringify({ stageId }) }),
   deleteDeal: (dealId: string) => request<void>(`/api/crm/deals/${dealId}`, { method: "DELETE" }),
+
+  // --- busca e notas ---
+  search: (q: string) => request<SearchHit[]>(`/api/search?q=${encodeURIComponent(q)}`),
+  notes: (conversationId: string) =>
+    request<ConversationNote[]>(`/api/conversations/${conversationId}/notes`),
+  addNote: (conversationId: string, text: string) =>
+    request<ConversationNote>(`/api/conversations/${conversationId}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    }),
 };

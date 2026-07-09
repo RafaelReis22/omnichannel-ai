@@ -108,6 +108,8 @@ export function ConversationView({ conversationId }: { conversationId: string })
         </ol>
       </div>
 
+      <NotesPanel conversationId={conversationId} />
+
       <footer className="border-t border-line p-4">
         <form
           onSubmit={(event) => {
@@ -169,5 +171,79 @@ function MessageBubble({ message }: { message: Message }) {
         </time>
       </div>
     </li>
+  );
+}
+
+function NotesPanel({ conversationId }: { conversationId: string }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const { data: notes } = useQuery({
+    queryKey: ["notes", conversationId],
+    queryFn: () => api.notes(conversationId),
+    enabled: open,
+  });
+  const addMutation = useMutation({
+    mutationFn: () => api.addNote(conversationId, draft.trim()),
+    onSuccess: () => {
+      setDraft("");
+      queryClient.invalidateQueries({ queryKey: ["notes", conversationId] });
+    },
+  });
+
+  return (
+    <section className="border-t border-line bg-st-open-soft/40">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-2 text-xs font-semibold tracking-wide text-st-open uppercase"
+      >
+        Notas internas {notes && notes.length > 0 ? `(${notes.length})` : ""}
+        <span aria-hidden>{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-3">
+          <ul className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+            {notes?.map((note) => (
+              <li key={note.id} className="rounded-md bg-paper-raised px-3 py-1.5 text-sm">
+                {note.text}
+                <time className="ml-2 font-mono text-[10px] text-ink-soft">
+                  {new Date(note.createdAt).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </time>
+              </li>
+            ))}
+            {notes?.length === 0 && (
+              <li className="text-xs text-ink-soft">Nenhuma nota — só a equipe vê o que for escrito aqui.</li>
+            )}
+          </ul>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (draft.trim()) addMutation.mutate();
+            }}
+            className="mt-2 flex gap-2"
+          >
+            <input
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Adicionar nota interna…"
+              className="flex-1 rounded-md border border-line bg-paper px-3 py-1.5 text-sm outline-none focus:border-accent"
+            />
+            <button
+              type="submit"
+              disabled={addMutation.isPending || !draft.trim()}
+              className="rounded-md border border-st-open/40 bg-paper-raised px-3 py-1.5 text-sm font-medium text-st-open transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              Anotar
+            </button>
+          </form>
+        </div>
+      )}
+    </section>
   );
 }
