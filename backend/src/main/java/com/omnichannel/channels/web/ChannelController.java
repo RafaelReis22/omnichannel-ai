@@ -13,7 +13,6 @@ import com.omnichannel.shared.tenancy.TenantContext;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -47,7 +46,13 @@ class ChannelController {
 	record ConnectChannelRequest(
 			@NotNull ChannelType type,
 			@NotBlank @Size(max = 120) String name,
-			@NotEmpty Map<String, String> credentials) {
+			// webchat não usa credenciais; canais que usam (e-mail, WhatsApp)
+			// validam as chaves obrigatórias no momento do uso
+			Map<String, String> credentials) {
+
+		Map<String, String> credentialsOrEmpty() {
+			return credentials == null ? Map.of() : credentials;
+		}
 	}
 
 	record ChannelResponse(UUID id, ChannelType type, String name, String status, Instant createdAt) {
@@ -62,7 +67,7 @@ class ChannelController {
 	@ResponseStatus(HttpStatus.CREATED)
 	ChannelResponse connect(@Valid @RequestBody ConnectChannelRequest request) {
 		Channel channel = channelService.connect(TenantContext.getTenantId(), request.type(), request.name(),
-				request.credentials());
+				request.credentialsOrEmpty());
 		return ChannelResponse.from(channel);
 	}
 

@@ -101,9 +101,9 @@ class ChannelApiIntegrationTest {
 
 	@Test
 	void payloadInvalidoRetorna400() {
-		ResponseEntity<Map> semCredenciais = exchange(HttpMethod.POST, "/api/channels", adminToken,
-				Map.of("type", "WHATSAPP", "name", "X", "credentials", Map.of()));
-		assertThat(semCredenciais.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		ResponseEntity<Map> semNome = exchange(HttpMethod.POST, "/api/channels", adminToken,
+				Map.of("type", "WHATSAPP", "name", "", "credentials", Map.of("k", "v")));
+		assertThat(semNome.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test
