@@ -36,4 +36,22 @@ public class ChannelDirectory {
 				status -> channelService.findActivePublic(channelId, ChannelType.WEBCHAT)
 					.map(channel -> new PublicChannel(channel.getId(), channel.getTenantId(), channel.getType()))));
 	}
+
+	/**
+	 * Resolve um canal para webhook autenticado por token secreto (BSPs que
+	 * não assinam requisições). Comparação em tempo constante.
+	 */
+	public Optional<PublicChannel> findActiveForWebhook(UUID channelId, ChannelType type, String webhookToken) {
+		return TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(status -> channelService
+			.findActivePublic(channelId, type)
+			.filter(channel -> {
+				String expected = channelService.credentialsOf(channel.getId())
+					.values()
+					.get("webhook_token");
+				return expected != null && java.security.MessageDigest.isEqual(
+						expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+						webhookToken.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			})
+			.map(channel -> new PublicChannel(channel.getId(), channel.getTenantId(), channel.getType()))));
+	}
 }

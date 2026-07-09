@@ -55,10 +55,11 @@ class ChannelController {
 		}
 	}
 
-	record ChannelResponse(UUID id, ChannelType type, String name, String status, Instant createdAt) {
+	record ChannelResponse(UUID id, ChannelType type, String name, String status, Instant createdAt,
+			String webhookPath) {
 		static ChannelResponse from(Channel channel) {
 			return new ChannelResponse(channel.getId(), channel.getType(), channel.getName(),
-					channel.getStatus().name(), channel.getCreatedAt());
+					channel.getStatus().name(), channel.getCreatedAt(), null);
 		}
 	}
 
@@ -66,9 +67,22 @@ class ChannelController {
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
 	ChannelResponse connect(@Valid @RequestBody ConnectChannelRequest request) {
+		Map<String, String> credentials = new java.util.HashMap<>(request.credentialsOrEmpty());
+		String webhookToken = null;
+		if (request.type() == ChannelType.WHATSAPP && !credentials.containsKey("webhook_token")) {
+			// BSPs não assinam webhooks: o token secreto na URL é a autenticação.
+			// Exibido UMA única vez, aqui — depois vive só criptografado.
+			byte[] random = new byte[32];
+			new java.security.SecureRandom().nextBytes(random);
+			webhookToken = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+			credentials.put("webhook_token", webhookToken);
+		}
 		Channel channel = channelService.connect(TenantContext.getTenantId(), request.type(), request.name(),
-				request.credentialsOrEmpty());
-		return ChannelResponse.from(channel);
+				credentials);
+		String webhookPath = webhookToken == null ? null
+				: "/api/whatsapp/webhook/" + channel.getId() + "/" + webhookToken;
+		return new ChannelResponse(channel.getId(), channel.getType(), channel.getName(),
+				channel.getStatus().name(), channel.getCreatedAt(), webhookPath);
 	}
 
 	@GetMapping
