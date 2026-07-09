@@ -62,6 +62,8 @@ class SecurityConfig {
 				.requestMatchers("/api/auth/**", "/actuator/health/**", "/actuator/health").permitAll()
 				// widget público de webchat: visitante anônimo, channelId como site key
 				.requestMatchers("/api/webchat/**").permitAll()
+				// websocket: JWT validado no handshake (query param), não aqui
+				.requestMatchers("/ws").permitAll()
 				// contrato da API e UI de exploração; reavaliar exposição pública na Fase 4
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 				.anyRequest().authenticated())

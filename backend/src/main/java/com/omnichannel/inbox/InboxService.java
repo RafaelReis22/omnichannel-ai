@@ -68,6 +68,7 @@ public class InboxService {
 		// gatilho do AI Worker — pelo outbox, na mesma transação
 		eventPublisher.publishEvent(new ContactMessageRegistered(event.tenantId(), conversation.getId(),
 				message.getId(), message.getText()));
+		eventPublisher.publishEvent(new ConversationActivity(event.tenantId(), conversation.getId()));
 	}
 
 	/**
@@ -83,6 +84,7 @@ public class InboxService {
 		conversation.registerActivity(message.previewText(), java.time.Instant.now());
 		conversation.moveToAi();
 		outboundMessenger.send(new OutboundMessage(conversation.getChannelId(), identity.getExternalId(), content));
+		eventPublisher.publishEvent(new ConversationActivity(conversation.getTenantId(), conversation.getId()));
 		return message;
 	}
 
@@ -119,6 +121,7 @@ public class InboxService {
 	public Conversation assign(UUID conversationId, UUID userId) {
 		Conversation conversation = getConversation(conversationId);
 		conversation.assignTo(userId);
+		eventPublisher.publishEvent(new ConversationActivity(conversation.getTenantId(), conversationId));
 		return conversation;
 	}
 
@@ -126,6 +129,7 @@ public class InboxService {
 	public Conversation resolve(UUID conversationId) {
 		Conversation conversation = getConversation(conversationId);
 		conversation.resolve();
+		eventPublisher.publishEvent(new ConversationActivity(conversation.getTenantId(), conversationId));
 		return conversation;
 	}
 
@@ -148,6 +152,7 @@ public class InboxService {
 		conversation.registerActivity(message.previewText(), java.time.Instant.now());
 		outboundMessenger
 			.send(new OutboundMessage(conversation.getChannelId(), identity.getExternalId(), content));
+		eventPublisher.publishEvent(new ConversationActivity(conversation.getTenantId(), conversation.getId()));
 		return message;
 	}
 
