@@ -6,6 +6,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { tokenStore } from "@/lib/auth";
+import { useRealtime } from "@/lib/use-realtime";
 
 const noopSubscribe = () => () => {};
 
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isLoggedIn, router]);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: api.me, enabled: isLoggedIn });
+  useRealtime(isLoggedIn);
 
   if (!isLoggedIn) return null;
 

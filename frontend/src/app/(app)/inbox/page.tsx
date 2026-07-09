@@ -22,7 +22,7 @@ export default function InboxPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["conversations", status],
     queryFn: () => api.conversations({ status: status || undefined }),
-    refetchInterval: 5_000,
+    refetchInterval: 30_000,
   });
 
   return (

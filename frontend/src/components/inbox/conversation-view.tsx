@@ -14,7 +14,7 @@ export function ConversationView({ conversationId }: { conversationId: string })
   const { data: conversation } = useQuery({
     queryKey: ["conversation", conversationId],
     queryFn: () => api.conversation(conversationId),
-    refetchInterval: 5_000,
+    refetchInterval: 30_000,
   });
   const { data: contact } = useQuery({
     queryKey: ["contact", conversation?.contactId],
@@ -24,7 +24,7 @@ export function ConversationView({ conversationId }: { conversationId: string })
   const { data: messages } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: () => api.messages(conversationId),
-    refetchInterval: 5_000,
+    refetchInterval: 30_000,
   });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: api.me });
 
