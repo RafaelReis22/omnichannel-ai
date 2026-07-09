@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+### Adicionado
+- Canal de e-mail: poller IMAP agendado varre as caixas de todos os canais EMAIL ativos (multi-tenant, falha isolada por canal), normaliza para o inbox com dedup por Message-ID; resposta do agente sai por SMTP com as credenciais do próprio canal. Testado de ponta a ponta offline com Greenmail.
+
 ## [0.2.0] — 2026-07-08
 
 MVP self-contained completo (Fase 1 parcial): inbox, IA auditável, webchat com widget e CRM.
