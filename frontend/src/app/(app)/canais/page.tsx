@@ -11,17 +11,32 @@ const TYPES = [
   { value: "EMAIL", label: "E-mail" },
 ] as const;
 
+const EMAIL_FIELDS = [
+  { key: "imap_host", label: "Servidor IMAP", placeholder: "imap.provedor.com" },
+  { key: "imap_port", label: "Porta IMAP", placeholder: "993" },
+  { key: "imap_username", label: "Usuário IMAP", placeholder: "suporte@suaempresa.com" },
+  { key: "imap_password", label: "Senha IMAP", password: true },
+  { key: "smtp_host", label: "Servidor SMTP", placeholder: "smtp.provedor.com" },
+  { key: "smtp_port", label: "Porta SMTP", placeholder: "587" },
+  { key: "smtp_username", label: "Usuário SMTP", placeholder: "suporte@suaempresa.com" },
+  { key: "smtp_password", label: "Senha SMTP", password: true },
+  { key: "from_address", label: "Remetente (De:)", placeholder: "suporte@suaempresa.com" },
+] as const;
+
 export default function ChannelsPage() {
   const queryClient = useQueryClient();
   const [type, setType] = useState<string>("WEBCHAT");
   const [name, setName] = useState("");
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
 
   const { data: channels } = useQuery({ queryKey: ["channels"], queryFn: api.channels });
 
   const connectMutation = useMutation({
-    mutationFn: () => api.connectChannel({ type, name, credentials: { origem: "dashboard" } }),
+    mutationFn: () =>
+      api.connectChannel({ type, name, credentials: type === "EMAIL" ? credentials : {} }),
     onSuccess: () => {
       setName("");
+      setCredentials({});
       queryClient.invalidateQueries({ queryKey: ["channels"] });
     },
   });
@@ -30,8 +45,7 @@ export default function ChannelsPage() {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <h1 className="text-lg font-semibold">Canais</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Cada canal conectado alimenta o mesmo inbox. O chat do site funciona na hora; WhatsApp e
-        e-mail chegam nas próximas versões.
+        Cada canal conectado alimenta o mesmo inbox. Chat do site e e-mail funcionam na hora; WhatsApp chega quando você conectar seu provedor (BSP).
       </p>
 
       <form
@@ -65,6 +79,28 @@ export default function ChannelsPage() {
             className="rounded-md border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
         </label>
+        {type === "EMAIL" && (
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            {EMAIL_FIELDS.map((field) => (
+              <label key={field.key} className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium">{field.label}</span>
+                <input
+                  type={"password" in field && field.password ? "password" : "text"}
+                  value={credentials[field.key] ?? ""}
+                  onChange={(event) =>
+                    setCredentials((current) => ({ ...current, [field.key]: event.target.value }))
+                  }
+                  placeholder={"placeholder" in field ? field.placeholder : undefined}
+                  required
+                  className="rounded-md border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                />
+              </label>
+            ))}
+            <p className="col-span-full text-xs text-ink-soft">
+              As credenciais são criptografadas (AES-256) e nunca aparecem de volta na interface.
+            </p>
+          </div>
+        )}
         <button
           type="submit"
           disabled={connectMutation.isPending}
