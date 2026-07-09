@@ -66,6 +66,8 @@ class SecurityConfig {
 				.requestMatchers("/ws").permitAll()
 				// webhook do BSP de WhatsApp: autenticado pelo token secreto na URL
 				.requestMatchers("/api/whatsapp/webhook/**").permitAll()
+				// webhooks Meta: GET verificado por token, POST por assinatura HMAC
+				.requestMatchers("/api/meta/webhook/**").permitAll()
 				// contrato da API e UI de exploração; reavaliar exposição pública na Fase 4
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 				.anyRequest().authenticated())

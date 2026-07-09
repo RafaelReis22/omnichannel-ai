@@ -56,10 +56,10 @@ class ChannelController {
 	}
 
 	record ChannelResponse(UUID id, ChannelType type, String name, String status, Instant createdAt,
-			String webhookPath) {
+			String webhookPath, String verifyToken) {
 		static ChannelResponse from(Channel channel) {
 			return new ChannelResponse(channel.getId(), channel.getType(), channel.getName(),
-					channel.getStatus().name(), channel.getCreatedAt(), null);
+					channel.getStatus().name(), channel.getCreatedAt(), null, null);
 		}
 	}
 
@@ -69,20 +69,34 @@ class ChannelController {
 	ChannelResponse connect(@Valid @RequestBody ConnectChannelRequest request) {
 		Map<String, String> credentials = new java.util.HashMap<>(request.credentialsOrEmpty());
 		String webhookToken = null;
+		String verifyToken = null;
 		if (request.type() == ChannelType.WHATSAPP && !credentials.containsKey("webhook_token")) {
 			// BSPs não assinam webhooks: o token secreto na URL é a autenticação.
 			// Exibido UMA única vez, aqui — depois vive só criptografado.
-			byte[] random = new byte[32];
-			new java.security.SecureRandom().nextBytes(random);
-			webhookToken = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+			webhookToken = randomToken();
 			credentials.put("webhook_token", webhookToken);
+		}
+		if ((request.type() == ChannelType.MESSENGER || request.type() == ChannelType.INSTAGRAM)
+				&& !credentials.containsKey("verify_token")) {
+			// verificação de endpoint da Meta (hub.challenge) — idem: uma exibição
+			verifyToken = randomToken();
+			credentials.put("verify_token", verifyToken);
 		}
 		Channel channel = channelService.connect(TenantContext.getTenantId(), request.type(), request.name(),
 				credentials);
-		String webhookPath = webhookToken == null ? null
-				: "/api/whatsapp/webhook/" + channel.getId() + "/" + webhookToken;
+		String webhookPath = switch (request.type()) {
+			case WHATSAPP -> "/api/whatsapp/webhook/" + channel.getId() + "/" + webhookToken;
+			case MESSENGER, INSTAGRAM -> "/api/meta/webhook/" + channel.getId();
+			default -> null;
+		};
 		return new ChannelResponse(channel.getId(), channel.getType(), channel.getName(),
-				channel.getStatus().name(), channel.getCreatedAt(), webhookPath);
+				channel.getStatus().name(), channel.getCreatedAt(), webhookPath, verifyToken);
+	}
+
+	private static String randomToken() {
+		byte[] random = new byte[32];
+		new java.security.SecureRandom().nextBytes(random);
+		return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random);
 	}
 
 	@GetMapping
