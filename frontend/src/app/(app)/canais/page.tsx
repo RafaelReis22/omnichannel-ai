@@ -9,6 +9,8 @@ const TYPES = [
   { value: "WEBCHAT", label: "Chat do site" },
   { value: "WHATSAPP", label: "WhatsApp" },
   { value: "EMAIL", label: "E-mail" },
+  { value: "INSTAGRAM", label: "Instagram" },
+  { value: "MESSENGER", label: "Messenger" },
 ] as const;
 
 const EMAIL_FIELDS = [
