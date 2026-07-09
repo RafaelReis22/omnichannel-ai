@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import type { AiSettings } from "@/lib/types";
 
 export default function AiPage() {
   return (
@@ -14,20 +15,20 @@ export default function AiPage() {
 }
 
 function SettingsCard() {
-  const queryClient = useQueryClient();
   const { data: settings } = useQuery({ queryKey: ["ai-settings"], queryFn: api.aiSettings });
+  // formulário só monta com os dados carregados: estado inicia das props,
+  // sem sincronização via effect
+  if (!settings) {
+    return <section className="rounded-lg border border-line bg-paper-raised p-5 text-sm text-ink-soft">Carregando…</section>;
+  }
+  return <SettingsForm settings={settings} />;
+}
 
-  const [enabled, setEnabled] = useState(true);
-  const [threshold, setThreshold] = useState(0.7);
-  const [tone, setTone] = useState("");
-
-  useEffect(() => {
-    if (settings) {
-      setEnabled(settings.enabled);
-      setThreshold(settings.confidenceThreshold);
-      setTone(settings.tone ?? "");
-    }
-  }, [settings]);
+function SettingsForm({ settings }: { settings: AiSettings }) {
+  const queryClient = useQueryClient();
+  const [enabled, setEnabled] = useState(settings.enabled);
+  const [threshold, setThreshold] = useState(settings.confidenceThreshold);
+  const [tone, setTone] = useState(settings.tone ?? "");
 
   const saveMutation = useMutation({
     mutationFn: () =>

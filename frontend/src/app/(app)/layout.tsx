@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { tokenStore } from "@/lib/auth";
+
+const noopSubscribe = () => () => {};
 
 const NAV = [
   { href: "/inbox", label: "Inbox" },
@@ -18,19 +20,16 @@ const NAV = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
+  // client-only (localStorage): false no SSR, valor real após hidratar
+  const isLoggedIn = useSyncExternalStore(noopSubscribe, () => tokenStore.isLoggedIn(), () => false);
 
   useEffect(() => {
-    if (!tokenStore.isLoggedIn()) {
-      router.replace("/login");
-      return;
-    }
-    setReady(true);
-  }, [router]);
+    if (!isLoggedIn) router.replace("/login");
+  }, [isLoggedIn, router]);
 
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: api.me, enabled: ready });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: api.me, enabled: isLoggedIn });
 
-  if (!ready) return null;
+  if (!isLoggedIn) return null;
 
   return (
     <div className="grid min-h-dvh grid-cols-[13.5rem_1fr]">
