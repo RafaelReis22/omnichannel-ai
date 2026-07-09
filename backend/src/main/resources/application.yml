@@ -73,6 +73,9 @@ app:
   channels:
     # AES-256 p/ credenciais de canal em repouso — gere com: openssl rand -base64 32
     credentials-key: ${CHANNEL_CREDENTIALS_KEY:}
+    email:
+      # intervalo da varredura IMAP dos canais de e-mail (ISO-8601)
+      poll-interval: ${EMAIL_POLL_INTERVAL:PT30S}
   security:
     # Falha no startup se ausente — gere com: openssl rand -base64 64
     jwt-secret: ${JWT_SECRET:}

@@ -52,6 +52,12 @@ public class ChannelService {
 		return channel;
 	}
 
+	/** Canais ativos de um tipo — usado pelo poller de e-mail sob contexto de sistema. */
+	@Transactional(readOnly = true)
+	public List<Channel> findActiveByType(ChannelType type) {
+		return channelRepository.findAllByTypeAndStatus(type, ChannelStatus.ACTIVE);
+	}
+
 	@Transactional(readOnly = true)
 	public java.util.Optional<Channel> findActivePublic(UUID channelId, ChannelType expectedType) {
 		return channelRepository.findById(channelId)
