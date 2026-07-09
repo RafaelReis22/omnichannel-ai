@@ -66,6 +66,13 @@ public class ChannelService {
 	}
 
 	@Transactional(readOnly = true)
+	public java.util.Optional<Channel> findActiveOfAnyType(UUID channelId, java.util.Set<ChannelType> types) {
+		return channelRepository.findById(channelId)
+			.filter(Channel::isActive)
+			.filter(channel -> types.contains(channel.getType()));
+	}
+
+	@Transactional(readOnly = true)
 	public Channel requireActiveChannelForSend(UUID channelId) {
 		return channelRepository.findById(channelId)
 			.filter(Channel::isActive)
