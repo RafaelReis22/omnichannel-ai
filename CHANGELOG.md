@@ -5,6 +5,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Inbox ao vivo: WebSocket `/ws` com JWT validado no handshake (mesmo decoder do resource server — token de desafio MFA recusado), push por tenant a cada mutação de conversa após commit; dashboard invalida as queries na hora e mantém polling relaxado como rede de segurança.
+- Formulário de credenciais IMAP/SMTP na tela Canais (webchat deixou de exigir credenciais).
 - Canal de e-mail: poller IMAP agendado varre as caixas de todos os canais EMAIL ativos (multi-tenant, falha isolada por canal), normaliza para o inbox com dedup por Message-ID; resposta do agente sai por SMTP com as credenciais do próprio canal. Testado de ponta a ponta offline com Greenmail.
 
 ## [0.2.0] — 2026-07-08
