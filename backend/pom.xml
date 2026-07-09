@@ -79,6 +79,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
+		<!-- Inbox ao vivo no dashboard (docs/04) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
 		<!-- Servidor SMTP/IMAP em memória para testes do canal de e-mail -->
 		<dependency>
 			<groupId>com.icegreen</groupId>
