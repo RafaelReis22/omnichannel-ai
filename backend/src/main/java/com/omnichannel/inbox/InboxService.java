@@ -35,17 +35,20 @@ public class InboxService {
 	private final ContactIdentityRepository contactIdentityRepository;
 	private final ConversationRepository conversationRepository;
 	private final MessageRepository messageRepository;
+	private final com.omnichannel.inbox.domain.ConversationNoteRepository conversationNoteRepository;
 	private final OutboundMessenger outboundMessenger;
 	private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
 	public InboxService(ContactRepository contactRepository, ContactIdentityRepository contactIdentityRepository,
 			ConversationRepository conversationRepository, MessageRepository messageRepository,
+			com.omnichannel.inbox.domain.ConversationNoteRepository conversationNoteRepository,
 			OutboundMessenger outboundMessenger,
 			org.springframework.context.ApplicationEventPublisher eventPublisher) {
 		this.contactRepository = contactRepository;
 		this.contactIdentityRepository = contactIdentityRepository;
 		this.conversationRepository = conversationRepository;
 		this.messageRepository = messageRepository;
+		this.conversationNoteRepository = conversationNoteRepository;
 		this.outboundMessenger = outboundMessenger;
 		this.eventPublisher = eventPublisher;
 	}
@@ -170,6 +173,23 @@ public class InboxService {
 			.map(conversation -> messageRepository
 				.findTop50ByConversationIdAndCreatedAtGreaterThanOrderByCreatedAtAsc(conversation.getId(), after))
 			.orElse(List.of());
+	}
+
+	/** Nota interna: visível só para a equipe; notifica os dashboards. */
+	@Transactional
+	public com.omnichannel.inbox.domain.ConversationNote addNote(UUID conversationId, UUID authorUserId,
+			String text) {
+		Conversation conversation = getConversation(conversationId);
+		var note = conversationNoteRepository.save(new com.omnichannel.inbox.domain.ConversationNote(
+				conversation.getTenantId(), conversationId, authorUserId, text));
+		eventPublisher.publishEvent(new ConversationActivity(conversation.getTenantId(), conversationId));
+		return note;
+	}
+
+	@Transactional(readOnly = true)
+	public List<com.omnichannel.inbox.domain.ConversationNote> notesOf(UUID conversationId) {
+		getConversation(conversationId); // 404 antes de listar
+		return conversationNoteRepository.findAllByConversationIdOrderByCreatedAtAsc(conversationId);
 	}
 
 	@Transactional(readOnly = true)

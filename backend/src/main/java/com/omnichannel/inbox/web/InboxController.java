@@ -40,9 +40,11 @@ class InboxController {
 	private static final int MAX_PAGE_SIZE = 100;
 
 	private final InboxService inboxService;
+	private final com.omnichannel.inbox.SearchService searchService;
 
-	InboxController(InboxService inboxService) {
+	InboxController(InboxService inboxService, com.omnichannel.inbox.SearchService searchService) {
 		this.inboxService = inboxService;
+		this.searchService = searchService;
 	}
 
 	record ConversationResponse(UUID id, UUID contactId, UUID channelId, String status, UUID assigneeUserId,
@@ -118,6 +120,33 @@ class InboxController {
 			JwtAuthenticationToken authentication) {
 		UUID agentUserId = UUID.fromString(authentication.getToken().getSubject());
 		return MessageResponse.from(inboxService.replyAsAgent(id, agentUserId, request.toContent()));
+	}
+
+	record NoteRequest(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 4000) String text) {
+	}
+
+	record NoteResponse(UUID id, UUID authorUserId, String text, Instant createdAt) {
+		static NoteResponse from(com.omnichannel.inbox.domain.ConversationNote note) {
+			return new NoteResponse(note.getId(), note.getAuthorUserId(), note.getText(), note.getCreatedAt());
+		}
+	}
+
+	@GetMapping("/conversations/{id}/notes")
+	List<NoteResponse> notes(@PathVariable UUID id) {
+		return inboxService.notesOf(id).stream().map(NoteResponse::from).toList();
+	}
+
+	@PostMapping("/conversations/{id}/notes")
+	@ResponseStatus(HttpStatus.CREATED)
+	NoteResponse addNote(@PathVariable UUID id, @Valid @RequestBody NoteRequest request,
+			JwtAuthenticationToken authentication) {
+		UUID authorUserId = UUID.fromString(authentication.getToken().getSubject());
+		return NoteResponse.from(inboxService.addNote(id, authorUserId, request.text()));
+	}
+
+	@GetMapping("/search")
+	List<com.omnichannel.inbox.SearchService.SearchHit> search(@RequestParam String q) {
+		return searchService.search(q);
 	}
 
 	record ContactResponse(UUID id, String name, List<String> tags, List<IdentityResponse> identities) {
