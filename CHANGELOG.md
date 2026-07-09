@@ -5,6 +5,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Adicionado
+- Busca global (`GET /api/search`): full-text em português (tsvector + índices GIN) sobre mensagens e contatos, escopada pelo RLS; no dashboard, campo de busca com debounce que abre a conversa direto do resultado.
+- Notas internas em conversas: visíveis só para a equipe, com autor e horário, notificando os dashboards em tempo real; painel recolhível na tela da conversa.
 - Canais Meta (Fase 2): Instagram e Messenger via webhook único `/api/meta/webhook/{channelId}` — GET de verificação (`hub.challenge` com verify_token gerado no connect) e POST autenticado por assinatura `X-Hub-Signature-256` (HMAC do corpo bruto com o app_secret); ecos da própria página ignorados; envio via Graph API `/me/messages`. Testado offline com assinaturas reais e Graph simulado.
 - Adapter de WhatsApp via BSP 360dialog: webhook `POST /api/whatsapp/webhook/{channelId}/{token}` (token secreto por canal gerado no connect e exibido uma única vez — BSPs não assinam requisições) parseia o formato Cloud API; envio via `D360-API-KEY` com `base_url` configurável. Testado offline com BSP simulado; falta apenas plugar credenciais reais.
 - Inbox ao vivo: WebSocket `/ws` com JWT validado no handshake (mesmo decoder do resource server — token de desafio MFA recusado), push por tenant a cada mutação de conversa após commit; dashboard invalida as queries na hora e mantém polling relaxado como rede de segurança.
