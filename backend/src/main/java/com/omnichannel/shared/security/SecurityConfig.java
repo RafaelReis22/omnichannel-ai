@@ -64,6 +64,8 @@ class SecurityConfig {
 				.requestMatchers("/api/webchat/**").permitAll()
 				// websocket: JWT validado no handshake (query param), não aqui
 				.requestMatchers("/ws").permitAll()
+				// webhook do BSP de WhatsApp: autenticado pelo token secreto na URL
+				.requestMatchers("/api/whatsapp/webhook/**").permitAll()
 				// contrato da API e UI de exploração; reavaliar exposição pública na Fase 4
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 				.anyRequest().authenticated())
