@@ -1,80 +1,78 @@
 @import "tailwindcss";
 
 /*
- * Direção visual: "console de operações calmo" — papel quente, tinta
- * profunda, acento teal da marca, e cores SEMÂNTICAS por status de
- * conversa (cor com significado, não decoração).
+ * Direção visual v2 (feedback do fundador): claro, neutro e calmo para
+ * uso o dia inteiro. Base quase branca, cinzas frios, UM acento (teal)
+ * reservado a ações primárias e estados ativos; status de conversa como
+ * ponto+texto discreto, nunca competindo com o conteúdo.
  */
 :root {
-  --paper: oklch(97.5% 0.007 92);
-  --paper-raised: oklch(99.3% 0.004 92);
-  --ink: oklch(23% 0.022 260);
-  --ink-soft: oklch(45% 0.02 258);
-  --line: oklch(88% 0.012 90);
+  --paper: oklch(98.6% 0.002 250);
+  --paper-raised: oklch(100% 0 0);
+  --paper-sunken: oklch(96.8% 0.003 250);
+  --ink: oklch(21% 0.015 255);
+  --ink-soft: oklch(50% 0.012 255);
+  --line: oklch(91% 0.004 255);
+  --line-strong: oklch(84% 0.006 255);
 
-  --accent: oklch(50% 0.11 175);
-  --accent-soft: oklch(93% 0.04 175);
-  --accent-ink: oklch(32% 0.075 175);
+  --accent: oklch(51% 0.1 180);
+  --accent-hover: oklch(45% 0.1 180);
+  --accent-soft: oklch(95.5% 0.02 180);
+  --accent-ink: oklch(38% 0.08 180);
 
-  /* painel lateral: identidade da marca, não cinza de template */
-  --panel: oklch(26% 0.045 195);
-  --panel-ink: oklch(92% 0.02 175);
-  --panel-muted: oklch(68% 0.03 190);
+  /* status de conversa: tons legíveis mas discretos */
+  --st-open: oklch(58% 0.14 60);
+  --st-open-soft: oklch(96.5% 0.03 75);
+  --st-ai: oklch(52% 0.14 295);
+  --st-ai-soft: oklch(96.5% 0.025 295);
+  --st-human: oklch(50% 0.11 245);
+  --st-human-soft: oklch(96.5% 0.02 245);
+  --st-resolved: oklch(52% 0.11 155);
+  --st-resolved-soft: oklch(96.5% 0.03 155);
 
-  /* status de conversa */
-  --st-open: oklch(62% 0.15 70);
-  --st-open-soft: oklch(95% 0.05 80);
-  --st-ai: oklch(55% 0.16 300);
-  --st-ai-soft: oklch(94% 0.05 300);
-  --st-human: oklch(52% 0.13 250);
-  --st-human-soft: oklch(94% 0.04 250);
-  --st-resolved: oklch(55% 0.13 155);
-  --st-resolved-soft: oklch(94% 0.05 155);
-
-  --danger: oklch(55% 0.19 25);
+  --danger: oklch(53% 0.18 25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: oklch(18% 0.015 258);
-    --paper-raised: oklch(22% 0.018 258);
-    --ink: oklch(93% 0.012 90);
-    --ink-soft: oklch(70% 0.02 100);
-    --line: oklch(31% 0.02 258);
+    --paper: oklch(19% 0.012 255);
+    --paper-raised: oklch(23% 0.014 255);
+    --paper-sunken: oklch(16.5% 0.01 255);
+    --ink: oklch(93% 0.008 250);
+    --ink-soft: oklch(68% 0.012 250);
+    --line: oklch(30% 0.014 255);
+    --line-strong: oklch(38% 0.016 255);
 
-    --accent: oklch(72% 0.12 175);
-    --accent-soft: oklch(30% 0.05 175);
-    --accent-ink: oklch(87% 0.08 175);
+    --accent: oklch(70% 0.1 180);
+    --accent-hover: oklch(76% 0.1 180);
+    --accent-soft: oklch(28% 0.04 180);
+    --accent-ink: oklch(82% 0.08 180);
 
-    --panel: oklch(20% 0.04 195);
-    --panel-ink: oklch(92% 0.02 175);
-    --panel-muted: oklch(62% 0.03 190);
+    --st-open: oklch(76% 0.12 70);
+    --st-open-soft: oklch(28% 0.05 65);
+    --st-ai: oklch(76% 0.11 295);
+    --st-ai-soft: oklch(28% 0.05 295);
+    --st-human: oklch(74% 0.1 245);
+    --st-human-soft: oklch(28% 0.05 245);
+    --st-resolved: oklch(74% 0.11 155);
+    --st-resolved-soft: oklch(27% 0.05 155);
 
-    --st-open: oklch(75% 0.13 75);
-    --st-open-soft: oklch(30% 0.06 70);
-    --st-ai: oklch(75% 0.13 300);
-    --st-ai-soft: oklch(30% 0.07 300);
-    --st-human: oklch(74% 0.11 250);
-    --st-human-soft: oklch(30% 0.06 250);
-    --st-resolved: oklch(75% 0.12 155);
-    --st-resolved-soft: oklch(28% 0.06 155);
-
-    --danger: oklch(70% 0.17 25);
+    --danger: oklch(68% 0.16 25);
   }
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-accent-ink: var(--accent-ink);
-  --color-panel: var(--panel);
-  --color-panel-ink: var(--panel-ink);
-  --color-panel-muted: var(--panel-muted);
   --color-st-open: var(--st-open);
   --color-st-open-soft: var(--st-open-soft);
   --color-st-ai: var(--st-ai);

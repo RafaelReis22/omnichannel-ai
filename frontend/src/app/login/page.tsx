@@ -9,6 +9,10 @@ import { AuthShell, Field, PrimaryButton } from "@/components/ui/auth-shell";
 
 export default function LoginPage() {
   const router = useRouter();
+  // já logado? direto para o trabalho
+  if (typeof window !== "undefined" && tokenStore.isLoggedIn()) {
+    router.replace("/inbox");
+  }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState<string | null>(null);

@@ -34,10 +34,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!isLoggedIn) return null;
 
   return (
-    <div className="grid min-h-dvh grid-cols-[13.5rem_1fr]">
-      <aside className="flex flex-col bg-panel text-panel-ink">
-        <p className="px-5 pt-6 pb-8 font-mono text-sm tracking-wide text-panel-muted">
-          omnichannel-ai
+    <div className="grid min-h-dvh grid-cols-[13rem_1fr]">
+      <aside className="flex flex-col border-r border-line bg-paper-sunken">
+        <p className="px-5 pt-5 pb-6 text-sm font-semibold tracking-tight">
+          omnichannel<span className="text-accent">·</span>ai
         </p>
         <nav aria-label="Navegação principal" className="flex flex-col gap-0.5 px-3">
           {NAV.map((item) => {
@@ -46,10 +46,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md border-l-2 px-3 py-1.5 text-sm transition-colors ${
                   active
-                    ? "bg-white/10 text-panel-ink"
-                    : "text-panel-muted hover:bg-white/5 hover:text-panel-ink"
+                    ? "border-l-accent bg-paper-raised font-semibold text-ink shadow-sm"
+                    : "border-l-transparent font-medium text-ink-soft hover:bg-paper-raised hover:text-ink"
                 }`}
               >
                 {item.label}
@@ -57,11 +57,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-white/10 px-5 py-4">
+        <div className="mt-auto border-t border-line px-5 py-4">
           {me && (
-            <p className="truncate text-sm">
+            <p className="truncate text-sm font-medium">
               {me.name}
-              <span className="block truncate text-xs text-panel-muted">{me.email}</span>
+              <span className="block truncate text-xs font-normal text-ink-soft">{me.email}</span>
             </p>
           )}
           <button
@@ -69,13 +69,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               tokenStore.clear();
               router.replace("/login");
             }}
-            className="mt-2 text-xs text-panel-muted underline underline-offset-2 hover:text-panel-ink"
+            className="mt-2 text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
           >
             Sair
           </button>
         </div>
       </aside>
-      <main className="min-w-0">{children}</main>
+      <main className="min-w-0 bg-paper">{children}</main>
     </div>
   );
 }

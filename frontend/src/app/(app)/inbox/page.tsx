@@ -55,17 +55,17 @@ export default function InboxPage() {
             aria-label="Busca global"
             className="mt-3 w-full rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
-          <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Filtro de status">
+          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5" role="tablist" aria-label="Filtro de status">
             {FILTERS.map((filter) => (
               <button
                 key={filter.value}
                 role="tab"
                 aria-selected={status === filter.value}
                 onClick={() => setStatus(filter.value)}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
                   status === filter.value
                     ? "bg-accent text-white"
-                    : "bg-paper-raised text-ink-soft hover:bg-accent-soft hover:text-accent-ink"
+                    : "bg-paper-sunken text-ink-soft hover:bg-accent-soft hover:text-accent-ink"
                 }`}
               >
                 {filter.label}
@@ -74,7 +74,20 @@ export default function InboxPage() {
           </div>
         </header>
         {searching ? (
-          <SearchResults hits={hits ?? []} onOpen={(id) => { setSelectedId(id); setQuery(""); }} />
+          <SearchResults
+            hits={hits ?? []}
+            onOpen={(id) => {
+              setSelectedId(id);
+              setQuery("");
+            }}
+            onOpenContact={async (contactId) => {
+              const history = await api.contactConversations(contactId);
+              if (history.length > 0) {
+                setSelectedId(history[0].id);
+                setQuery("");
+              }
+            }}
+          />
         ) : (
           <ConversationList
             conversations={data?.content ?? []}
@@ -97,7 +110,15 @@ export default function InboxPage() {
   );
 }
 
-function SearchResults({ hits, onOpen }: { hits: SearchHit[]; onOpen: (conversationId: string) => void }) {
+function SearchResults({
+  hits,
+  onOpen,
+  onOpenContact,
+}: {
+  hits: SearchHit[];
+  onOpen: (conversationId: string) => void;
+  onOpenContact: (contactId: string) => void;
+}) {
   if (hits.length === 0) {
     return <p className="p-4 text-sm text-ink-soft">Nada encontrado.</p>;
   }
@@ -106,9 +127,10 @@ function SearchResults({ hits, onOpen }: { hits: SearchHit[]; onOpen: (conversat
       {hits.map((hit) => (
         <li key={`${hit.type}-${hit.contactId}-${hit.occurredAt}`}>
           <button
-            onClick={() => hit.conversationId && onOpen(hit.conversationId)}
-            disabled={!hit.conversationId}
-            className="flex w-full flex-col gap-0.5 border-b border-line px-4 py-3 text-left transition-colors hover:bg-paper-raised disabled:cursor-default"
+            onClick={() =>
+              hit.conversationId ? onOpen(hit.conversationId) : onOpenContact(hit.contactId)
+            }
+            className="flex w-full flex-col gap-0.5 border-b border-line px-4 py-3 text-left transition-colors hover:bg-paper-sunken"
           >
             <span className="text-[11px] font-semibold tracking-wide text-accent-ink uppercase">
               {hit.type === "MESSAGE" ? "Mensagem" : "Contato"}

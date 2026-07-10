@@ -52,6 +52,7 @@ export function ConversationView({ conversationId }: { conversationId: string })
   const dealMutation = useMutation({
     mutationFn: () =>
       api.createDeal({ contactId: conversation!.contactId, title: `Negócio — ${contact?.name ?? "contato"}` }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board"] }),
   });
 
   useEffect(() => {
@@ -158,7 +159,7 @@ function MessageBubble({ message }: { message: Message }) {
             ? "bg-paper-raised text-ink"
             : fromAi
               ? "border border-st-ai/30 bg-st-ai-soft text-ink"
-              : "bg-accent text-white"
+              : "bg-accent text-white shadow-sm"
         }`}
       >
         {fromAi && <p className="mb-0.5 text-[11px] font-semibold text-st-ai">IA</p>}
@@ -192,13 +193,16 @@ function NotesPanel({ conversationId }: { conversationId: string }) {
   });
 
   return (
-    <section className="border-t border-line bg-st-open-soft/40">
+    <section className="border-t border-line bg-paper-sunken/60">
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-2 text-xs font-semibold tracking-wide text-st-open uppercase"
+        className="flex w-full items-center justify-between px-4 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:text-ink"
       >
-        Notas internas {notes && notes.length > 0 ? `(${notes.length})` : ""}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-st-open" aria-hidden />
+          Notas internas{notes && notes.length > 0 ? ` (${notes.length})` : ""}
+        </span>
         <span aria-hidden>{open ? "▾" : "▸"}</span>
       </button>
       {open && (
@@ -237,7 +241,7 @@ function NotesPanel({ conversationId }: { conversationId: string }) {
             <button
               type="submit"
               disabled={addMutation.isPending || !draft.trim()}
-              className="rounded-md border border-st-open/40 bg-paper-raised px-3 py-1.5 text-sm font-medium text-st-open transition-opacity hover:opacity-80 disabled:opacity-50"
+              className="rounded-md border border-line-strong bg-paper-raised px-3 py-1.5 text-sm font-medium transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
             >
               Anotar
             </button>
