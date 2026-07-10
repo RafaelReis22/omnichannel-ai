@@ -34,6 +34,17 @@ docker compose up -d                  # Postgres + Redis + RabbitMQ locais
 9. Pense como desenvolvedor sênior: questione requisitos estranhos, sugira melhorias quando encontrar oportunidades.
 10. Toda decisão considera segurança, performance e escalabilidade — mas sem overengineering (gatilhos de escala documentados em `docs/05-escalabilidade.md`).
 
+## Verificação obrigatória antes de declarar pronto
+
+Teste de backend verde NÃO significa produto funcionando. Toda entrega com
+superfície de UI exige, antes de ser declarada pronta:
+1. `cd frontend && node audit.mjs` — navega o app como usuário (Playwright),
+   tira screenshots em `/tmp/audit-*.png` e imprime problemas detectados.
+2. **Olhar os screenshots** (não só o output) — hierarquia, contraste, dark mode.
+3. Ampliar o `audit.mjs` a cada fluxo novo (feature nova = passo novo no script).
+Regra nascida de bugs reais que os testes de integração não pegam (UI que
+descarta dados da API, informação ausente na tela).
+
 ## Armadilhas conhecidas (aprendidas em produção de código)
 
 - **OSIV é proibido** (`spring.jpa.open-in-view: false`): ele segura a conexão pela requisição inteira e a conexão preparada pelo primeiro contexto (auth) seria reusada pelos seguintes (tenant), quebrando o RLS silenciosamente. Há um guard no `TenancyConfig` que falha o startup se religado.
