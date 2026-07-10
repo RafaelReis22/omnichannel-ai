@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+### Corrigido
+- Canais WhatsApp/Instagram/Messenger eram um beco sem saída na UI: agora têm campos de credencial por tipo e exibem a URL do webhook + verify token uma única vez após conectar, com botões de copiar.
+- Lista de conversas não mostrava o nome do contato nem o canal — inviável para uso contínuo.
+- IA com LLM indisponível deixava a conversa presa sem resposta: agora faz fail-open para a fila humana com registro explícito no livro-razão.
+
+### Alterado
+- Redesign para uso o dia inteiro: base clara e neutra, sidebar clara com estado ativo evidente, status como ponto+texto discreto, notas internas sutis, hierarquia nome→preview→metadados na lista.
+- Verificação E2E visual obrigatória (audit.mjs + Playwright) antes de qualquer entrega de UI.
+
 ### Adicionado
 - Busca global (`GET /api/search`): full-text em português (tsvector + índices GIN) sobre mensagens e contatos, escopada pelo RLS; no dashboard, campo de busca com debounce que abre a conversa direto do resultado.
 - Notas internas em conversas: visíveis só para a equipe, com autor e horário, notificando os dashboards em tempo real; painel recolhível na tela da conversa.
