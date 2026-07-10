@@ -37,6 +37,11 @@ public class ChannelDirectory {
 					.map(channel -> new PublicChannel(channel.getId(), channel.getTenantId(), channel.getType()))));
 	}
 
+	/** Tipos por id, no contexto de tenant do chamador (lista do inbox). */
+	public java.util.Map<UUID, ChannelType> typesOf(java.util.Collection<UUID> channelIds) {
+		return channelService.typesOf(channelIds);
+	}
+
 	/**
 	 * Resolve um canal para webhook autenticado por token secreto (BSPs que
 	 * não assinam requisições). Comparação em tempo constante.

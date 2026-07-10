@@ -52,6 +52,14 @@ public class ChannelService {
 		return channel;
 	}
 
+	/** Tipos por id — enriquecimento da lista do inbox, no contexto do chamador. */
+	@Transactional(readOnly = true)
+	public java.util.Map<UUID, ChannelType> typesOf(java.util.Collection<UUID> channelIds) {
+		return channelRepository.findAllById(channelIds)
+			.stream()
+			.collect(java.util.stream.Collectors.toMap(Channel::getId, Channel::getType));
+	}
+
 	/** Canais ativos de um tipo — usado pelo poller de e-mail sob contexto de sistema. */
 	@Transactional(readOnly = true)
 	public List<Channel> findActiveByType(ChannelType type) {

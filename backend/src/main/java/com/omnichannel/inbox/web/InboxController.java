@@ -41,19 +41,42 @@ class InboxController {
 
 	private final InboxService inboxService;
 	private final com.omnichannel.inbox.SearchService searchService;
+	private final com.omnichannel.inbox.domain.ContactRepository contactRepository;
+	private final com.omnichannel.channels.ChannelDirectory channelDirectory;
 
-	InboxController(InboxService inboxService, com.omnichannel.inbox.SearchService searchService) {
+	InboxController(InboxService inboxService, com.omnichannel.inbox.SearchService searchService,
+			com.omnichannel.inbox.domain.ContactRepository contactRepository,
+			com.omnichannel.channels.ChannelDirectory channelDirectory) {
 		this.inboxService = inboxService;
 		this.searchService = searchService;
+		this.contactRepository = contactRepository;
+		this.channelDirectory = channelDirectory;
 	}
 
-	record ConversationResponse(UUID id, UUID contactId, UUID channelId, String status, UUID assigneeUserId,
-			List<String> tags, String lastMessagePreview, Instant lastMessageAt, Instant createdAt) {
-		static ConversationResponse from(Conversation c) {
-			return new ConversationResponse(c.getId(), c.getContactId(), c.getChannelId(), c.getStatus().name(),
-					c.getAssigneeUserId(), c.getTags(), c.getLastMessagePreview(), c.getLastMessageAt(),
-					c.getCreatedAt());
-		}
+	record ConversationResponse(UUID id, UUID contactId, String contactName, UUID channelId, String channelType,
+			String status, UUID assigneeUserId, List<String> tags, String lastMessagePreview,
+			Instant lastMessageAt, Instant createdAt) {
+	}
+
+	/** Nome do contato e tipo do canal na resposta: a lista do inbox é lida o dia inteiro. */
+	private List<ConversationResponse> enrich(List<Conversation> conversations) {
+		var contactNames = contactRepository
+			.findAllById(conversations.stream().map(Conversation::getContactId).distinct().toList())
+			.stream()
+			.collect(java.util.stream.Collectors.toMap(Contact::getId, Contact::getName));
+		var channelTypes = channelDirectory
+			.typesOf(conversations.stream().map(Conversation::getChannelId).distinct().toList());
+		return conversations.stream()
+			.map(c -> new ConversationResponse(c.getId(), c.getContactId(),
+					contactNames.getOrDefault(c.getContactId(), "?"), c.getChannelId(),
+					channelTypes.containsKey(c.getChannelId()) ? channelTypes.get(c.getChannelId()).name() : null,
+					c.getStatus().name(), c.getAssigneeUserId(), c.getTags(), c.getLastMessagePreview(),
+					c.getLastMessageAt(), c.getCreatedAt()))
+			.toList();
+	}
+
+	private ConversationResponse enrichOne(Conversation conversation) {
+		return enrich(List.of(conversation)).getFirst();
 	}
 
 	record MessageResponse(UUID id, String sender, String kind, String text, String mediaUrl, UUID senderUserId,
@@ -81,14 +104,16 @@ class InboxController {
 			@RequestParam(required = false) UUID assigneeUserId,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "25") int size) {
-		return inboxService
-			.listConversations(status, assigneeUserId, PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE)))
-			.map(ConversationResponse::from);
+		var result = inboxService.listConversations(status, assigneeUserId,
+				PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE)));
+		List<ConversationResponse> enriched = enrich(result.getContent());
+		return new org.springframework.data.domain.PageImpl<>(enriched, result.getPageable(),
+				result.getTotalElements());
 	}
 
 	@GetMapping("/conversations/{id}")
 	ConversationResponse get(@PathVariable UUID id) {
-		return ConversationResponse.from(inboxService.getConversation(id));
+		return enrichOne(inboxService.getConversation(id));
 	}
 
 	@GetMapping("/conversations/{id}/messages")
@@ -101,17 +126,17 @@ class InboxController {
 
 	@PostMapping("/conversations/{id}/assign")
 	ConversationResponse assign(@PathVariable UUID id, @Valid @RequestBody AssignRequest request) {
-		return ConversationResponse.from(inboxService.assign(id, request.userId()));
+		return enrichOne(inboxService.assign(id, request.userId()));
 	}
 
 	@PostMapping("/conversations/{id}/resolve")
 	ConversationResponse resolve(@PathVariable UUID id) {
-		return ConversationResponse.from(inboxService.resolve(id));
+		return enrichOne(inboxService.resolve(id));
 	}
 
 	@PutMapping("/conversations/{id}/tags")
 	ConversationResponse tags(@PathVariable UUID id, @Valid @RequestBody TagsRequest request) {
-		return ConversationResponse.from(inboxService.replaceTags(id, request.tags()));
+		return enrichOne(inboxService.replaceTags(id, request.tags()));
 	}
 
 	@PostMapping("/conversations/{id}/reply")
@@ -168,7 +193,7 @@ class InboxController {
 	@GetMapping("/contacts/{id}/conversations")
 	List<ConversationResponse> contactHistory(@PathVariable UUID id) {
 		inboxService.getContact(id); // 404 antes de listar
-		return inboxService.conversationHistoryOf(id).stream().map(ConversationResponse::from).toList();
+		return enrich(inboxService.conversationHistoryOf(id));
 	}
 
 	@ExceptionHandler(ConversationNotFoundException.class)
