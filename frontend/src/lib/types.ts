@@ -28,7 +28,9 @@ export interface Me {
 export interface Conversation {
   id: string;
   contactId: string;
+  contactName: string;
   channelId: string;
+  channelType: string | null;
   status: ConversationStatus;
   assigneeUserId: string | null;
   tags: string[];
@@ -67,6 +69,12 @@ export interface Channel {
   name: string;
   status: string;
   createdAt: string;
+}
+
+/** Resposta do connect: webhookPath/verifyToken aparecem UMA única vez. */
+export interface ConnectedChannel extends Channel {
+  webhookPath: string | null;
+  verifyToken: string | null;
 }
 
 export interface KnowledgeDocument {

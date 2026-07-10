@@ -106,11 +106,12 @@ export const api = {
   resolve: (conversationId: string) =>
     request<Conversation>(`/api/conversations/${conversationId}/resolve`, { method: "POST" }),
   contact: (id: string) => request<Contact>(`/api/contacts/${id}`),
+  contactConversations: (id: string) => request<Conversation[]>(`/api/contacts/${id}/conversations`),
 
   // --- canais ---
   channels: () => request<Channel[]>("/api/channels"),
   connectChannel: (body: { type: string; name: string; credentials: Record<string, string> }) =>
-    request<Channel>("/api/channels", { method: "POST", body: JSON.stringify(body) }),
+    request<import("./types").ConnectedChannel>("/api/channels", { method: "POST", body: JSON.stringify(body) }),
 
   // --- IA ---
   knowledge: () => request<KnowledgeDocument[]>("/api/knowledge"),
