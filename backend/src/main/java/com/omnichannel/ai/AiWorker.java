@@ -65,22 +65,31 @@ class AiWorker {
 				return;
 			}
 
-			AnswerGenerator.GeneratedAnswer answer = answerGenerator
-				.generate(new AnswerGenerator.AnswerRequest(context.tone(), context.knowledgeChunks(),
-						context.history(), event.text()));
-			boolean confident = BigDecimal.valueOf(answer.confidence()).compareTo(context.threshold()) >= 0;
-			// resumo do handoff também é LLM: fora de transação
-			String handoffSummary = confident ? null : answerGenerator.summarize(context.history());
+			AnswerGenerator.GeneratedAnswer answer;
+			String handoffSummary;
+			boolean confident;
+			try {
+				answer = answerGenerator.generate(new AnswerGenerator.AnswerRequest(context.tone(),
+						context.knowledgeChunks(), context.history(), event.text()));
+				confident = BigDecimal.valueOf(answer.confidence()).compareTo(context.threshold()) >= 0;
+				// resumo do handoff também é LLM: fora de transação
+				handoffSummary = confident ? null : answerGenerator.summarize(context.history());
+			}
+			catch (Exception llmFailure) {
+				// FAIL-OPEN: LLM indisponível não pode deixar o cliente no vácuo.
+				// A conversa vai para a fila humana com registro explícito.
+				log.error("LLM falhou para conversa {}: {}", event.conversationId(), llmFailure.getMessage());
+				answer = new AnswerGenerator.GeneratedAnswer(null, 0.0);
+				confident = false;
+				handoffSummary = "IA indisponível (erro técnico) — conversa encaminhada para atendimento humano.";
+			}
+			final var decidedAnswer = answer;
+			final var decidedConfident = confident;
+			final var decidedSummary = handoffSummary;
 
 			// 2ª transação: aplica a decisão e grava o livro-razão.
 			tenantScopedTransaction
-				.executeWithoutResult(status -> apply(event, confident, answer, handoffSummary));
-		}
-		catch (Exception e) {
-			// exceção propaga: a publicação fica incompleta no outbox e será
-			// reprocessada — nunca perder a decisão silenciosamente
-			log.error("AI Worker falhou para conversa {}: {}", event.conversationId(), e.getMessage());
-			throw e;
+				.executeWithoutResult(status -> apply(event, decidedConfident, decidedAnswer, decidedSummary));
 		}
 		finally {
 			TenantContext.clear();
