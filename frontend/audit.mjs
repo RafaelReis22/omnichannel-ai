@@ -17,8 +17,9 @@ async function shot(name) {
   await page.screenshot({ path: `/tmp/audit-${name}.png`, fullPage: false });
 }
 
-// 1. signup
-await page.goto(`${BASE}/signup`);
+// 1. signup — networkidle: preencher antes da hidratação do React gera
+// falso-positivo de hydration mismatch no console
+await page.goto(`${BASE}/signup`, { waitUntil: "networkidle" });
 await shot("01-signup");
 await page.fill('input[type="text"] >> nth=0', "Auditoria Ltda");
 await page.fill('input[type="text"] >> nth=1', "Rafael");
@@ -40,10 +41,12 @@ const snippet = await page.textContent("pre").catch(() => null);
 if (!snippet?.includes("widget.js")) problems.push("snippet do widget não apareceu no card do canal");
 const channelId = snippet?.match(/data-channel-id="([^"]+)"/)?.[1];
 
-// 3. conectar whatsapp pela UI (como o usuário faria)
+// 3. conectar whatsapp pela UI (Cloud API — Meta for Developers, 3 campos)
 await page.selectOption("select", "WHATSAPP");
 await page.fill('input[placeholder*="Chat da loja"]', "Zap Auditoria");
-await page.fill('input[type="password"]', "chave-bsp-auditoria");
+await page.fill('input[placeholder*="123456789012345"]', "555000111222333");
+await page.fill('input[type="password"] >> nth=0', "token-meta-auditoria");
+await page.fill('input[type="password"] >> nth=1', "app-secret-auditoria");
 await page.click('button:has-text("Conectar")');
 await page.waitForTimeout(1200);
 await shot("04-canais-whatsapp");
@@ -83,6 +86,26 @@ await page.fill('input[placeholder*="nota interna"]', "Cliente perguntou de tele
 await page.click('button:has-text("Anotar")').catch(() => {});
 await page.waitForTimeout(800);
 await shot("07-conversa-nota");
+
+// 6b. anexar imagem e enviar com legenda
+const pngBytes = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAFklEQVR4nGP8z8Dwn4EIwESMolGFlCsEAE0sAxH+cX7lAAAAAElFTkSuQmCC",
+  "base64",
+);
+await page.setInputFiles('input[type="file"]', {
+  name: "produto-audit.png",
+  mimeType: "image/png",
+  buffer: pngBytes,
+});
+await page.waitForTimeout(1500); // upload + preview
+const attachPreview = await page.locator('img[alt="produto-audit.png"]').count();
+if (!attachPreview) problems.push("preview do anexo não apareceu no compositor após upload");
+await page.fill("textarea", "Segue a foto do produto!");
+await page.click('button:has-text("Enviar")');
+await page.waitForTimeout(1500);
+await shot("07b-conversa-midia");
+const mediaImg = await page.locator('a img[alt="Imagem anexada"]').count();
+if (!mediaImg) problems.push("imagem enviada não renderizou como <img> na conversa");
 
 // 7. busca
 await page.fill('input[type="search"]', "telefone");
