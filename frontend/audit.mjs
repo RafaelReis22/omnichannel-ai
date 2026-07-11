@@ -107,6 +107,15 @@ await shot("07b-conversa-midia");
 const mediaImg = await page.locator('a img[alt="Imagem anexada"]').count();
 if (!mediaImg) problems.push("imagem enviada não renderizou como <img> na conversa");
 
+// 6c. tags: adicionar e conferir na conversa e na lista
+await page.click('button:has-text("+ tag")');
+await page.fill('input[placeholder="nova tag…"]', "vip");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(1000);
+await shot("07c-conversa-tag");
+const tagText = await page.textContent("body");
+if (!tagText.includes("vip")) problems.push("tag adicionada não apareceu na conversa/lista");
+
 // 7. busca
 await page.fill('input[type="search"]', "telefone");
 await page.waitForTimeout(900);
