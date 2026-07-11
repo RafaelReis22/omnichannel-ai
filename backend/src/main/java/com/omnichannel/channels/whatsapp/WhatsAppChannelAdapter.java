@@ -52,13 +52,29 @@ class WhatsAppChannelAdapter implements ChannelAdapter {
 		}
 	}
 
+	/**
+	 * Nono dígito brasileiro: o wa_id que a Meta entrega vem SEM o 9 de
+	 * celulares antigos (55 + DDD + 8 dígitos), mas o número real — e a
+	 * lista de destinatários permitidos do número de teste — têm o 9.
+	 * Recolocamos ao enviar; números já com 13 dígitos passam intactos.
+	 */
+	static String normalizeBrazilianMobile(String to) {
+		if (to != null && to.startsWith("55") && to.length() == 12) {
+			char firstDigit = to.charAt(4);
+			if (firstDigit >= '6' && firstDigit <= '9') {
+				return to.substring(0, 4) + "9" + to.substring(4);
+			}
+		}
+		return to;
+	}
+
 	/** Formato Cloud API, comum aos dois provedores; mídia vai por link (URL pré-assinada). */
 	private Map<String, Object> buildPayload(OutboundMessage message) {
 		var content = message.content();
 		var body = new java.util.HashMap<String, Object>();
 		body.put("messaging_product", "whatsapp");
 		body.put("recipient_type", "individual");
-		body.put("to", message.externalContactId());
+		body.put("to", normalizeBrazilianMobile(message.externalContactId()));
 		if (content.kind() == MessageKind.TEXT) {
 			body.put("type", "text");
 			body.put("text", Map.of("body", content.text()));
