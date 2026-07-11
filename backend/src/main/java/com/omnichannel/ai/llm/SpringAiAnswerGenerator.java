@@ -39,8 +39,12 @@ class SpringAiAnswerGenerator implements AnswerGenerator {
 			um aviso curto e cordial de que você vai passar para alguém da equipe.
 			4. Nunca afirme ser uma IA por conta própria; se o cliente perguntar \
 			diretamente se é um robô, seja honesto.
-			5. Responda SOMENTE com JSON válido: \
-			{"resposta": "...", "confianca": 0.0, "transferir": false}
+			5. Marque "intencao_compra": true quando o cliente demonstrar intenção \
+			real de comprar, contratar, agendar visita ou fechar negócio (perguntar \
+			preço para decidir, pedir proposta, escolher produto). Curiosidade \
+			genérica não conta.
+			6. Responda SOMENTE com JSON válido: \
+			{"resposta": "...", "confianca": 0.0, "transferir": false, "intencao_compra": false}
 
 			BASE DE CONHECIMENTO:
 			%s""";
@@ -53,7 +57,8 @@ class SpringAiAnswerGenerator implements AnswerGenerator {
 		this.objectMapper = objectMapper;
 	}
 
-	private record ModelOutput(String resposta, double confianca, Boolean transferir) {
+	private record ModelOutput(String resposta, double confianca, Boolean transferir,
+			@com.fasterxml.jackson.annotation.JsonProperty("intencao_compra") Boolean intencaoCompra) {
 	}
 
 	@Override
@@ -102,7 +107,8 @@ class SpringAiAnswerGenerator implements AnswerGenerator {
 			int end = raw.lastIndexOf('}');
 			ModelOutput output = objectMapper.readValue(raw.substring(start, end + 1), ModelOutput.class);
 			double bounded = Math.clamp(output.confianca(), 0.0, 1.0);
-			return new GeneratedAnswer(output.resposta(), bounded, Boolean.TRUE.equals(output.transferir()));
+			return new GeneratedAnswer(output.resposta(), bounded, Boolean.TRUE.equals(output.transferir()),
+					Boolean.TRUE.equals(output.intencaoCompra()));
 		}
 		catch (Exception e) {
 			// saída fora do contrato = confiança zero: cai no handoff, nunca

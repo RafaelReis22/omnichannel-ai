@@ -124,6 +124,12 @@ public class Conversation {
 		this.status = ConversationStatus.RESOLVED;
 	}
 
+	public void addTagIfAbsent(String tag) {
+		if (!tags.contains(tag)) {
+			tags.add(tag);
+		}
+	}
+
 	public void replaceTags(List<String> tags) {
 		this.tags = new ArrayList<>(tags);
 	}

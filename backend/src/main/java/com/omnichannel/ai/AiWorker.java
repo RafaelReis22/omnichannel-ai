@@ -129,9 +129,15 @@ class AiWorker {
 				settings.getConfidenceThreshold(), chunks, history);
 	}
 
+	private static final String BUYING_INTENT_TAG = "possível venda";
+
 	private void apply(ContactMessageRegistered event, boolean confident, AnswerGenerator.GeneratedAnswer answer,
 			String handoffSummary) {
 		UUID tenantId = event.tenantId();
+		if (answer.buyingIntent()) {
+			// sinal comercial independe de quem vai responder
+			inboxService.tagConversation(event.conversationId(), BUYING_INTENT_TAG);
+		}
 		if (confident) {
 			Message aiMessage = inboxService.recordAiReply(event.conversationId(),
 					MessageContent.text(answer.text()), BigDecimal.valueOf(answer.confidence()));

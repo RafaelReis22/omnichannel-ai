@@ -202,6 +202,31 @@ class AiFlowIntegrationTest {
 	}
 
 	@Test
+	void intencaoDeCompraDetectadaEtiquetaAConversaParaOComercial() {
+		FakeAnswerGenerator.nextConfidence = 0.95;
+		FakeAnswerGenerator.nextAnswer = "O plano anual sai por R$ 990 — posso te mandar a proposta?";
+		FakeAnswerGenerator.nextBuyingIntent = true;
+
+		gateway.receive(inbound("cliente-comprador", "m-compra", "Quero fechar o plano anual, qual o preço?"));
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				List<ResolutionLedgerEntry> ledger = ledgerRepository.findAll();
+				assertThat(ledger).hasSize(1);
+				var conversation = conversationRepository.findById(ledger.getFirst().getConversationId())
+					.orElseThrow();
+				assertThat(conversation.getTags()).contains("possível venda");
+				// a IA continua respondendo normalmente — a etiqueta é só o sinal
+				assertThat(conversation.getStatus()).isEqualTo(ConversationStatus.WITH_AI);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+	}
+
+	@Test
 	void conversaComHumanoNaoRecebeInterferenciaDaIa() {
 		FakeAnswerGenerator.nextConfidence = 0.99;
 

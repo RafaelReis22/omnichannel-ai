@@ -22,11 +22,18 @@ public interface AnswerGenerator {
 	record ChatTurn(String role, String text) {
 	}
 
-	/** {@code handoffRequested}: o cliente pediu explicitamente um humano — transferir de verdade. */
-	record GeneratedAnswer(String text, double confidence, boolean handoffRequested) {
+	/**
+	 * {@code handoffRequested}: o cliente pediu explicitamente um humano — transferir de verdade.
+	 * {@code buyingIntent}: o cliente demonstrou intenção de compra — etiquetar para o comercial.
+	 */
+	record GeneratedAnswer(String text, double confidence, boolean handoffRequested, boolean buyingIntent) {
 
 		public GeneratedAnswer(String text, double confidence) {
-			this(text, confidence, false);
+			this(text, confidence, false, false);
+		}
+
+		public GeneratedAnswer(String text, double confidence, boolean handoffRequested) {
+			this(text, confidence, handoffRequested, false);
 		}
 	}
 }

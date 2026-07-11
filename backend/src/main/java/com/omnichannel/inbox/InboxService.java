@@ -144,6 +144,12 @@ public class InboxService {
 		return conversation;
 	}
 
+	/** Etiqueta automática (ex.: "possível venda" detectada pela IA) — idempotente. */
+	@Transactional
+	public void tagConversation(UUID conversationId, String tag) {
+		getConversation(conversationId).addTagIfAbsent(tag);
+	}
+
 	@Transactional
 	public Conversation replaceTags(UUID conversationId, List<String> tags) {
 		Conversation conversation = getConversation(conversationId);
