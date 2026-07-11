@@ -58,6 +58,9 @@ public class Conversation {
 	@Column(name = "last_message_at")
 	private Instant lastMessageAt;
 
+	@Column(name = "archived_at")
+	private Instant archivedAt;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -83,10 +86,19 @@ public class Conversation {
 		this.lastMessagePreview = preview == null ? null
 				: preview.substring(0, Math.min(preview.length(), PREVIEW_MAX_LENGTH));
 		this.lastMessageAt = at;
+		this.archivedAt = null; // atividade nova desarquiva
 		if (isResolved()) {
 			this.status = ConversationStatus.OPEN;
 			this.assigneeUserId = null;
 		}
+	}
+
+	public void archive() {
+		this.archivedAt = Instant.now();
+	}
+
+	public boolean isArchived() {
+		return archivedAt != null;
 	}
 
 	public void assignTo(UUID userId) {

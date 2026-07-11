@@ -22,7 +22,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
 
 	@Query("""
 			SELECT c FROM Conversation c
-			WHERE (:status IS NULL OR c.status = :status)
+			WHERE c.archivedAt IS NULL
+			  AND (:status IS NULL OR c.status = :status)
 			  AND (:assigneeUserId IS NULL OR c.assigneeUserId = :assigneeUserId)
 			ORDER BY c.lastMessageAt DESC NULLS LAST
 			""")

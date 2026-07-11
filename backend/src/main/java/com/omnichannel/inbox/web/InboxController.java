@@ -139,6 +139,11 @@ class InboxController {
 		return enrichOne(inboxService.resolve(id));
 	}
 
+	@PostMapping("/conversations/{id}/archive")
+	ConversationResponse archive(@PathVariable UUID id) {
+		return enrichOne(inboxService.archive(id));
+	}
+
 	@PutMapping("/conversations/{id}/tags")
 	ConversationResponse tags(@PathVariable UUID id, @Valid @RequestBody TagsRequest request) {
 		return enrichOne(inboxService.replaceTags(id, request.tags()));

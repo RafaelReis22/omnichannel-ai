@@ -49,6 +49,12 @@ class WebchatFlowIntegrationTest {
 	ChannelService channelService;
 
 	@Autowired
+	com.omnichannel.inbox.domain.ConversationRepository conversationRepository;
+
+	@Autowired
+	com.omnichannel.inbox.domain.ContactRepository contactRepository;
+
+	@Autowired
 	org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
 	String agentToken;
@@ -120,6 +126,17 @@ class WebchatFlowIntegrationTest {
 					List.class);
 			assertThat((List<Map>) thread.getBody()).hasSize(1);
 		});
+
+		// visitante anônimo (sem visitorName) ganha nome apresentável, não o id técnico
+		TenantContext.setTenantId(tenantId);
+		try {
+			var conversation = conversationRepository.findAll().getFirst();
+			var contactName = contactRepository.findById(conversation.getContactId()).orElseThrow().getName();
+			assertThat(contactName).startsWith("Visitante ").doesNotContain("vis-");
+		}
+		finally {
+			TenantContext.clear();
+		}
 	}
 
 	@Test

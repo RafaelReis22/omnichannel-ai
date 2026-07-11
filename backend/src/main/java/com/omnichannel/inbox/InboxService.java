@@ -91,6 +91,14 @@ public class InboxService {
 		return message;
 	}
 
+	/** Arquiva: some das listas sem apagar histórico; atividade nova desarquiva. */
+	@Transactional
+	public Conversation archive(UUID conversationId) {
+		Conversation conversation = getConversation(conversationId);
+		conversation.archive();
+		return conversation;
+	}
+
 	/** Handoff: devolve a conversa à fila humana (status OPEN, sem dono). */
 	@Transactional
 	public void markNeedsHuman(UUID conversationId) {
@@ -212,13 +220,33 @@ public class InboxService {
 		return contactIdentityRepository.findByChannelTypeAndExternalId(event.channelType(), event.externalContactId())
 			.map(identity -> contactRepository.findById(identity.getContactId()).orElseThrow())
 			.orElseGet(() -> {
-				String name = event.externalContactName() != null ? event.externalContactName()
-						: event.externalContactId();
-				Contact contact = contactRepository.save(new Contact(event.tenantId(), name));
+				Contact contact = contactRepository
+					.save(new Contact(event.tenantId(), displayNameFor(event)));
 				contactIdentityRepository.save(new ContactIdentity(event.tenantId(), contact.getId(),
 						event.channelType(), event.externalContactId()));
 				return contact;
 			});
+	}
+
+	/**
+	 * Nome apresentável quando o canal não informa um: id técnico
+	 * ("vis-8dc43f23-…") nas telas é ilegível para o operador. Telefone
+	 * (WhatsApp) é um nome aceitável; visitante anônimo vira
+	 * "Visitante abcd" com um sufixo curto para distinguir.
+	 */
+	private String displayNameFor(InboundMessageReceived event) {
+		if (event.externalContactName() != null && !event.externalContactName().isBlank()) {
+			return event.externalContactName();
+		}
+		String externalId = event.externalContactId();
+		if (event.channelType() == com.omnichannel.channels.ChannelType.WHATSAPP) {
+			return "+" + externalId;
+		}
+		if (externalId.matches(".*[0-9a-fA-F]{8}.*")) {
+			String suffix = externalId.replaceAll("[^0-9a-zA-Z]", "");
+			return "Visitante " + suffix.substring(Math.max(0, suffix.length() - 4));
+		}
+		return externalId;
 	}
 
 	private Conversation findOrCreateConversation(InboundMessageReceived event, Contact contact) {
