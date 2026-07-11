@@ -137,6 +137,8 @@ export const api = {
   disableChannel: (id: string) => request<Channel>(`/api/channels/${id}/disable`, { method: "POST" }),
   activateChannel: (id: string) => request<Channel>(`/api/channels/${id}/activate`, { method: "POST" }),
   deleteChannel: (id: string) => request<void>(`/api/channels/${id}`, { method: "DELETE" }),
+  updateChannelCredentials: (id: string, credentials: Record<string, string>) =>
+    request<Channel>(`/api/channels/${id}/credentials`, { method: "PUT", body: JSON.stringify(credentials) }),
   connectChannel: (body: { type: string; name: string; credentials: Record<string, string> }) =>
     request<import("./types").ConnectedChannel>("/api/channels", { method: "POST", body: JSON.stringify(body) }),
 

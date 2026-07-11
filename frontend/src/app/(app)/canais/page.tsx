@@ -226,6 +226,16 @@ function ChannelCard({ channel }: { channel: Channel }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
   const snippet = `<script src="${typeof window !== "undefined" ? window.location.origin : ""}/widget.js"\n        data-channel-id="${channel.id}"\n        data-api-url="${apiUrl}"></script>`;
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["channels"] });
+  const [editingCredentials, setEditingCredentials] = useState(false);
+  const [newCredentials, setNewCredentials] = useState<Record<string, string>>({});
+  const credentialsMutation = useMutation({
+    mutationFn: () => api.updateChannelCredentials(channel.id, newCredentials),
+    onSuccess: () => {
+      setEditingCredentials(false);
+      setNewCredentials({});
+      refresh();
+    },
+  });
   const disableMutation = useMutation({ mutationFn: () => api.disableChannel(channel.id), onSuccess: refresh });
   const activateMutation = useMutation({ mutationFn: () => api.activateChannel(channel.id), onSuccess: refresh });
   const deleteMutation = useMutation({ mutationFn: () => api.deleteChannel(channel.id), onSuccess: refresh });
@@ -249,6 +259,15 @@ function ChannelCard({ channel }: { channel: Channel }) {
           >
             {channel.status === "ACTIVE" ? "Ativo" : "Desativado"}
           </span>
+          {channel.status === "ACTIVE" && (FIELDS_BY_TYPE[channel.type] ?? []).length > 0 && (
+            <button
+              type="button"
+              onClick={() => setEditingCredentials(!editingCredentials)}
+              className="rounded-md border border-line px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent-ink"
+            >
+              Atualizar credenciais
+            </button>
+          )}
           {channel.status === "ACTIVE" ? (
             <button
               type="button"
@@ -291,6 +310,44 @@ function ChannelCard({ channel }: { channel: Channel }) {
           )}
         </div>
       </div>
+
+      {editingCredentials && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            credentialsMutation.mutate();
+          }}
+          className="mt-3 grid grid-cols-1 gap-3 border-t border-line pt-3 sm:grid-cols-3"
+        >
+          {(FIELDS_BY_TYPE[channel.type] ?? []).map((field) => (
+            <label key={field.key} className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium">{field.label}</span>
+              <input
+                type={field.password ? "password" : "text"}
+                value={newCredentials[field.key] ?? ""}
+                onChange={(event) =>
+                  setNewCredentials((current) => ({ ...current, [field.key]: event.target.value }))
+                }
+                placeholder="em branco = mantém o atual"
+                className="rounded-md border border-line-strong bg-paper px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </label>
+          ))}
+          <div className="col-span-full flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={credentialsMutation.isPending || Object.values(newCredentials).every((v) => !v.trim())}
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Salvar credenciais
+            </button>
+            <p className="text-xs text-ink-soft">
+              Só o que você preencher muda — a URL do webhook continua a mesma.
+            </p>
+            {credentialsMutation.isError && <p className="text-xs text-danger">Falha ao salvar.</p>}
+          </div>
+        </form>
+      )}
 
       {channel.type === "WEBCHAT" && (
         <div className="mt-3">

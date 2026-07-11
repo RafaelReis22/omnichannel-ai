@@ -165,9 +165,17 @@ await page.click('a[href="/ia"]');
 await page.waitForTimeout(800);
 await shot("11-ia");
 
-// 9. ciclo de vida do canal: desativar → reativar → excluir (sem conversas)
+// 9. ciclo de vida do canal: atualizar credenciais → desativar → reativar → excluir
 await page.click('a[href="/canais"]');
 await page.waitForTimeout(800);
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Atualizar credenciais")').click();
+await page.waitForTimeout(400);
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('input[type="password"]').first().fill("token-rotacionado");
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Salvar credenciais")').click();
+await page.waitForTimeout(1000);
+await shot("13b-canal-credenciais");
+if (await page.locator('button:has-text("Salvar credenciais")').count())
+  problems.push("form de credenciais não fechou após salvar (falha no PUT?)");
 page.once("dialog", (d) => d.accept());
 await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Desativar")').click();
 await page.waitForTimeout(900);

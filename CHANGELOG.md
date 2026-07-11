@@ -17,6 +17,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Verificação E2E visual obrigatória (audit.mjs + Playwright) antes de qualquer entrega de UI.
 
 ### Adicionado
+- Atualizar credenciais de canal sem reconectar (`PUT /api/channels/{id}/credentials`): mescla com as existentes — trocar só o access_token da Meta (expira em ~24h no modo teste) preserva webhook_token/verify_token e a URL configurada no painel do provedor; formulário no card do canal.
 - Ciclo de vida completo nas telas (feedback de uso real): excluir negócio no pipeline, desativar/reativar/excluir canal (excluir só sem conversas no histórico), e arquivar conversa — some das listas preservando o histórico e desarquiva sozinha se o cliente escrever de novo.
 - Recibos de entrega do WhatsApp logados (statuses): falha de entrega da Meta agora aparece no log com o código real — foi assim que se descobriu o bloqueio 130497 (número de teste dos EUA não envia para o Brasil).
 - Relatórios operacionais (Fase 3): página Relatórios com período de 7/30/90 dias — novas conversas, mensagens recebidas, resolvidas, autonomia da IA (respostas vs. handoffs do livro-razão) e mediana do tempo de primeira resposta; gráfico de barras por dia e distribuição por canal e status (SVG próprio, sem lib). `GET /api/analytics/overview` calcula tudo em SQL com o RLS escopando por tenant automaticamente.
