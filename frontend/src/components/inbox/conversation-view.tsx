@@ -90,6 +90,11 @@ export function ConversationView({ conversationId }: { conversationId: string })
           <p className="truncate font-mono text-xs text-ink-soft">
             {contact?.identities.map((identity) => identity.externalId).join(" · ")}
           </p>
+          <TagsEditor
+            conversationId={conversationId}
+            tags={conversation.tags}
+            onSaved={invalidate}
+          />
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <StatusChip status={conversation.status} />
@@ -245,6 +250,87 @@ function MessageBubble({ message }: { message: Message }) {
         </time>
       </div>
     </li>
+  );
+}
+
+function TagsEditor({
+  conversationId,
+  tags,
+  onSaved,
+}: {
+  conversationId: string;
+  tags: string[];
+  onSaved: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const saveMutation = useMutation({
+    mutationFn: (next: string[]) => api.updateTags(conversationId, next),
+    onSuccess: () => {
+      setDraft("");
+      setAdding(false);
+      onSaved();
+    },
+  });
+
+  const addTag = () => {
+    const tag = draft.trim().toLowerCase();
+    if (!tag || tags.includes(tag)) {
+      setDraft("");
+      setAdding(false);
+      return;
+    }
+    saveMutation.mutate([...tags, tag]);
+  };
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="group inline-flex items-center gap-1 rounded-full bg-paper-sunken px-2 py-0.5 text-xs text-ink-soft"
+        >
+          {tag}
+          <button
+            type="button"
+            onClick={() => saveMutation.mutate(tags.filter((t) => t !== tag))}
+            aria-label={`Remover tag ${tag}`}
+            className="text-ink-soft/60 transition-colors hover:text-danger"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {adding ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addTag();
+            }
+            if (event.key === "Escape") {
+              setDraft("");
+              setAdding(false);
+            }
+          }}
+          onBlur={addTag}
+          placeholder="nova tag…"
+          className="w-24 rounded-full border border-line bg-paper-raised px-2 py-0.5 text-xs outline-none focus:border-accent"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          disabled={saveMutation.isPending}
+          className="rounded-full border border-dashed border-line-strong px-2 py-0.5 text-xs text-ink-soft transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
+        >
+          + tag
+        </button>
+      )}
+    </div>
   );
 }
 

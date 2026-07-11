@@ -122,6 +122,11 @@ export const api = {
     }),
   resolve: (conversationId: string) =>
     request<Conversation>(`/api/conversations/${conversationId}/resolve`, { method: "POST" }),
+  updateTags: (conversationId: string, tags: string[]) =>
+    request<Conversation>(`/api/conversations/${conversationId}/tags`, {
+      method: "PUT",
+      body: JSON.stringify({ tags }),
+    }),
   contact: (id: string) => request<Contact>(`/api/contacts/${id}`),
   contactConversations: (id: string) => request<Conversation[]>(`/api/contacts/${id}/conversations`),
 
