@@ -68,6 +68,10 @@ export function ConversationView({ conversationId }: { conversationId: string })
     mutationFn: () => api.resolve(conversationId),
     onSuccess: invalidate,
   });
+  const archiveMutation = useMutation({
+    mutationFn: () => api.archiveConversation(conversationId),
+    onSuccess: invalidate,
+  });
   const dealMutation = useMutation({
     mutationFn: () =>
       api.createDeal({ contactId: conversation!.contactId, title: `Negócio — ${contact?.name ?? "contato"}` }),
@@ -129,6 +133,17 @@ export function ConversationView({ conversationId }: { conversationId: string })
               Resolver
             </button>
           )}
+          <button
+            onClick={() => {
+              if (window.confirm("Arquivar esta conversa? Ela some das listas e volta sozinha se o cliente escrever de novo."))
+                archiveMutation.mutate();
+            }}
+            disabled={archiveMutation.isPending}
+            title="Arquivar conversa (o histórico é preservado)"
+            className="rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
+          >
+            Arquivar
+          </button>
         </div>
       </header>
 

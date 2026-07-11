@@ -165,7 +165,40 @@ await page.click('a[href="/ia"]');
 await page.waitForTimeout(800);
 await shot("11-ia");
 
-// 9. dark mode
+// 9. ciclo de vida do canal: desativar → reativar → excluir (sem conversas)
+await page.click('a[href="/canais"]');
+await page.waitForTimeout(800);
+page.once("dialog", (d) => d.accept());
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Desativar")').click();
+await page.waitForTimeout(900);
+await shot("14-canal-desativado");
+const canaisText = await page.textContent("body");
+if (!canaisText.includes("Reativar")) problems.push("canal desativado não mostrou botão Reativar");
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Reativar")').click();
+await page.waitForTimeout(900);
+page.once("dialog", (d) => d.accept());
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Desativar")').click();
+await page.waitForTimeout(900);
+page.once("dialog", (d) => d.accept());
+await page.locator('li', { hasText: "Zap Auditoria" }).locator('button:has-text("Excluir")').click();
+await page.waitForTimeout(1200);
+if ((await page.textContent("body")).includes("Zap Auditoria"))
+  problems.push("canal sem conversas não foi excluído");
+
+// 9b. arquivar a conversa e conferir que some da lista
+await page.click('a[href="/inbox"]');
+await page.waitForTimeout(800);
+await page.locator("li button").first().click();
+await page.waitForTimeout(600);
+page.once("dialog", (d) => d.accept());
+await page.click('button:has-text("Arquivar")');
+await page.waitForTimeout(1200);
+await shot("15-conversa-arquivada");
+// a conversa aberta à direita continua visível — o que deve sumir é o item da LISTA
+if ((await page.locator("li button").count()) > 0)
+  problems.push("conversa arquivada continua aparecendo na lista");
+
+// 10. dark mode
 await page.emulateMedia({ colorScheme: "dark" });
 await page.click('a[href="/inbox"]');
 await page.waitForTimeout(800);

@@ -221,9 +221,14 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 }
 
 function ChannelCard({ channel }: { channel: Channel }) {
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
   const snippet = `<script src="${typeof window !== "undefined" ? window.location.origin : ""}/widget.js"\n        data-channel-id="${channel.id}"\n        data-api-url="${apiUrl}"></script>`;
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["channels"] });
+  const disableMutation = useMutation({ mutationFn: () => api.disableChannel(channel.id), onSuccess: refresh });
+  const activateMutation = useMutation({ mutationFn: () => api.activateChannel(channel.id), onSuccess: refresh });
+  const deleteMutation = useMutation({ mutationFn: () => api.deleteChannel(channel.id), onSuccess: refresh });
 
   return (
     <li className="rounded-lg border border-line bg-paper-raised p-4">
@@ -234,15 +239,57 @@ function ChannelCard({ channel }: { channel: Channel }) {
             {TYPE_LABEL[channel.type] ?? channel.type} · {channel.id}
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            channel.status === "ACTIVE"
-              ? "bg-st-resolved-soft text-st-resolved"
-              : "bg-paper-sunken text-ink-soft"
-          }`}
-        >
-          {channel.status === "ACTIVE" ? "Ativo" : channel.status}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              channel.status === "ACTIVE"
+                ? "bg-st-resolved-soft text-st-resolved"
+                : "bg-paper-sunken text-ink-soft"
+            }`}
+          >
+            {channel.status === "ACTIVE" ? "Ativo" : "Desativado"}
+          </span>
+          {channel.status === "ACTIVE" ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Desativar o canal "${channel.name}"? Ele para de receber e enviar mensagens.`))
+                  disableMutation.mutate();
+              }}
+              disabled={disableMutation.isPending}
+              className="rounded-md border border-line px-2 py-1 text-xs text-ink-soft transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
+            >
+              Desativar
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => activateMutation.mutate()}
+                disabled={activateMutation.isPending}
+                className="rounded-md border border-line px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
+              >
+                Reativar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Excluir o canal "${channel.name}" de vez? Só é possível sem conversas no histórico.`))
+                    deleteMutation.mutate();
+                }}
+                disabled={deleteMutation.isPending}
+                className="rounded-md border border-line px-2 py-1 text-xs text-ink-soft transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
+              >
+                Excluir
+              </button>
+            </>
+          )}
+          {deleteMutation.isError && (
+            <span className="text-xs text-danger">
+              {deleteMutation.error instanceof Error ? deleteMutation.error.message : "Falha ao excluir"}
+            </span>
+          )}
+        </div>
       </div>
 
       {channel.type === "WEBCHAT" && (

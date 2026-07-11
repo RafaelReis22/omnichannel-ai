@@ -122,6 +122,8 @@ export const api = {
     }),
   resolve: (conversationId: string) =>
     request<Conversation>(`/api/conversations/${conversationId}/resolve`, { method: "POST" }),
+  archiveConversation: (conversationId: string) =>
+    request<Conversation>(`/api/conversations/${conversationId}/archive`, { method: "POST" }),
   updateTags: (conversationId: string, tags: string[]) =>
     request<Conversation>(`/api/conversations/${conversationId}/tags`, {
       method: "PUT",
@@ -132,6 +134,9 @@ export const api = {
 
   // --- canais ---
   channels: () => request<Channel[]>("/api/channels"),
+  disableChannel: (id: string) => request<Channel>(`/api/channels/${id}/disable`, { method: "POST" }),
+  activateChannel: (id: string) => request<Channel>(`/api/channels/${id}/activate`, { method: "POST" }),
+  deleteChannel: (id: string) => request<void>(`/api/channels/${id}`, { method: "DELETE" }),
   connectChannel: (body: { type: string; name: string; credentials: Record<string, string> }) =>
     request<import("./types").ConnectedChannel>("/api/channels", { method: "POST", body: JSON.stringify(body) }),
 

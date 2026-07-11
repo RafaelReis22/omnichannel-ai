@@ -109,6 +109,11 @@ function DealCardView({
   dragging: boolean;
   onDragStart: (id: string | null) => void;
 }) {
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: () => api.deleteDeal(deal.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board"] }),
+  });
   return (
     <li
       draggable
@@ -118,11 +123,25 @@ function DealCardView({
         onDragStart(deal.id);
       }}
       onDragEnd={() => onDragStart(null)}
-      className={`cursor-grab rounded-md border border-line bg-paper p-3 shadow-sm transition-all active:cursor-grabbing ${
+      className={`group cursor-grab rounded-md border border-line bg-paper p-3 shadow-sm transition-all active:cursor-grabbing ${
         dragging ? "opacity-40" : "hover:border-accent/50 hover:shadow"
       }`}
     >
-      <p className="text-sm font-medium">{deal.title}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium">{deal.title}</p>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm(`Excluir o negócio "${deal.title}"?`)) deleteMutation.mutate();
+          }}
+          disabled={deleteMutation.isPending}
+          aria-label={`Excluir negócio ${deal.title}`}
+          title="Excluir negócio"
+          className="shrink-0 rounded px-1 text-sm text-ink-soft/0 transition-colors group-hover:text-ink-soft hover:!text-danger"
+        >
+          ✕
+        </button>
+      </div>
       <p className="mt-0.5 truncate text-xs text-ink-soft">{deal.contactName}</p>
       {deal.value !== null && (
         <p className="mt-1.5 font-mono text-xs text-accent-ink">
