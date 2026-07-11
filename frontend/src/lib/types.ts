@@ -127,6 +127,19 @@ export interface SearchHit {
   occurredAt: string;
 }
 
+export interface Appointment {
+  id: string;
+  contactId: string;
+  contactName: string;
+  conversationId: string | null;
+  title: string;
+  notes: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: "SCHEDULED" | "DONE" | "CANCELLED";
+  createdAt: string;
+}
+
 export interface UploadedMedia {
   mediaUrl: string;
   previewUrl: string;

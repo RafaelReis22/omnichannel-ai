@@ -154,6 +154,33 @@ export const api = {
     request<DealCard>(`/api/crm/deals/${dealId}/move`, { method: "POST", body: JSON.stringify({ stageId }) }),
   deleteDeal: (dealId: string) => request<void>(`/api/crm/deals/${dealId}`, { method: "DELETE" }),
 
+  // --- agenda ---
+  appointments: () => request<import("./types").Appointment[]>("/api/appointments"),
+  conversationAppointments: (conversationId: string) =>
+    request<import("./types").Appointment[]>(`/api/appointments/by-conversation/${conversationId}`),
+  createAppointment: (body: {
+    contactId: string;
+    conversationId?: string;
+    title: string;
+    notes?: string;
+    scheduledAt: string;
+    durationMinutes?: number;
+  }) => request<import("./types").Appointment>("/api/appointments", { method: "POST", body: JSON.stringify(body) }),
+  appointmentDone: (id: string) =>
+    request<import("./types").Appointment>(`/api/appointments/${id}/done`, { method: "POST" }),
+  appointmentCancel: (id: string) =>
+    request<import("./types").Appointment>(`/api/appointments/${id}/cancel`, { method: "POST" }),
+  appointmentIcsUrl: (id: string) => `${BASE_URL}/api/appointments/${id}/ics`,
+  downloadAppointmentIcs: async (id: string) => {
+    // fetch autenticado + blob: o backend exige JWT, então um <a href> direto não serve
+    const headers = new Headers();
+    const token = tokenStore.access();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(`${BASE_URL}/api/appointments/${id}/ics`, { headers });
+    if (!response.ok) throw new ApiError(response.status, `Erro ${response.status}`);
+    return response.blob();
+  },
+
   // --- busca e notas ---
   search: (q: string) => request<SearchHit[]>(`/api/search?q=${encodeURIComponent(q)}`),
   notes: (conversationId: string) =>

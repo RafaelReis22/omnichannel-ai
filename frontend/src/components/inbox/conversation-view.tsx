@@ -98,6 +98,11 @@ export function ConversationView({ conversationId }: { conversationId: string })
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <StatusChip status={conversation.status} />
+          <ScheduleButton
+            conversationId={conversationId}
+            contactId={conversation.contactId}
+            contactName={contact?.name ?? "contato"}
+          />
           <button
             onClick={() => dealMutation.mutate()}
             disabled={dealMutation.isPending || dealMutation.isSuccess}
@@ -250,6 +255,109 @@ function MessageBubble({ message }: { message: Message }) {
         </time>
       </div>
     </li>
+  );
+}
+
+function ScheduleButton({
+  conversationId,
+  contactId,
+  contactName,
+}: {
+  conversationId: string;
+  contactId: string;
+  contactName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState(30);
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.createAppointment({
+        contactId,
+        conversationId,
+        title: title.trim() || `Reunião — ${contactName}`,
+        scheduledAt: new Date(when).toISOString(),
+        durationMinutes: duration,
+      }),
+    onSuccess: () => setOpen(false),
+  });
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => {
+          setOpen(!open);
+          if (!open) {
+            setTitle(`Reunião — ${contactName}`);
+            createMutation.reset();
+          }
+        }}
+        className="rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm font-medium transition-colors hover:border-accent hover:text-accent-ink"
+      >
+        {createMutation.isSuccess ? "Agendado ✓" : "Agendar"}
+      </button>
+      {open && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (when) createMutation.mutate();
+          }}
+          className="absolute top-full right-0 z-10 mt-2 flex w-72 flex-col gap-2 rounded-lg border border-line bg-paper-raised p-3 shadow-lg"
+        >
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Título
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className="rounded-md border border-line bg-paper px-2 py-1.5 text-sm font-normal outline-none focus:border-accent"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Quando
+            <input
+              type="datetime-local"
+              required
+              value={when}
+              onChange={(event) => setWhen(event.target.value)}
+              className="rounded-md border border-line bg-paper px-2 py-1.5 text-sm font-normal outline-none focus:border-accent"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Duração
+            <select
+              value={duration}
+              onChange={(event) => setDuration(Number(event.target.value))}
+              className="rounded-md border border-line bg-paper px-2 py-1.5 text-sm font-normal outline-none focus:border-accent"
+            >
+              <option value={15}>15 min</option>
+              <option value={30}>30 min</option>
+              <option value={45}>45 min</option>
+              <option value={60}>1 hora</option>
+              <option value={90}>1h30</option>
+            </select>
+          </label>
+          <div className="mt-1 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-md px-3 py-1.5 text-sm text-ink-soft transition-colors hover:text-ink"
+            >
+              Fechar
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || !when}
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Marcar
+            </button>
+          </div>
+          {createMutation.isError && <p className="text-xs text-danger">Falha ao agendar. Tente novamente.</p>}
+        </form>
+      )}
+    </div>
   );
 }
 

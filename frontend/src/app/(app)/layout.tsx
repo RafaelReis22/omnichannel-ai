@@ -12,6 +12,7 @@ const noopSubscribe = () => () => {};
 
 const NAV = [
   { href: "/inbox", label: "Inbox" },
+  { href: "/agenda", label: "Agenda" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/canais", label: "Canais" },
   { href: "/conhecimento", label: "Conhecimento" },
