@@ -52,6 +52,22 @@ public class ChannelService {
 		return channel;
 	}
 
+	@Transactional
+	public Channel activate(UUID channelId) {
+		Channel channel = channelRepository.findById(channelId)
+			.orElseThrow(() -> new ChannelNotAvailableException("Canal não encontrado"));
+		channel.activate();
+		return channel;
+	}
+
+	/** Exclusão real — o banco recusa (FK) se o canal já tem conversas. */
+	@Transactional
+	public void delete(UUID channelId) {
+		Channel channel = channelRepository.findById(channelId)
+			.orElseThrow(() -> new ChannelNotAvailableException("Canal não encontrado"));
+		channelRepository.delete(channel);
+	}
+
 	/** Tipos por id — enriquecimento da lista do inbox, no contexto do chamador. */
 	@Transactional(readOnly = true)
 	public java.util.Map<UUID, ChannelType> typesOf(java.util.Collection<UUID> channelIds) {

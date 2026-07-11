@@ -112,6 +112,25 @@ class ChannelController {
 		return ChannelResponse.from(channelService.disable(id));
 	}
 
+	@PostMapping("/{id}/activate")
+	@PreAuthorize("hasRole('ADMIN')")
+	ChannelResponse activate(@PathVariable UUID id) {
+		return ChannelResponse.from(channelService.activate(id));
+	}
+
+	@org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void delete(@PathVariable UUID id) {
+		channelService.delete(id);
+	}
+
+	@ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+	ProblemDetail handleChannelInUse(org.springframework.dao.DataIntegrityViolationException exception) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+				"Canal tem conversas no histórico — desative em vez de excluir.");
+	}
+
 	@ExceptionHandler(ChannelNotAvailableException.class)
 	ProblemDetail handleChannelNotAvailable(ChannelNotAvailableException exception) {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());

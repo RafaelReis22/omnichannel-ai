@@ -61,6 +61,10 @@ public class Channel {
 		return status == ChannelStatus.ACTIVE;
 	}
 
+	public void activate() {
+		this.status = ChannelStatus.ACTIVE;
+	}
+
 	public void disable() {
 		this.status = ChannelStatus.DISABLED;
 	}

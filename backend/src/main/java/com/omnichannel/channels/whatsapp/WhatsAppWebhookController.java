@@ -140,6 +140,20 @@ class WhatsAppWebhookController {
 			for (Map<String, Object> change : (List<Map<String, Object>>) entry.getOrDefault("changes",
 					List.of())) {
 				Map<String, Object> value = (Map<String, Object>) change.getOrDefault("value", Map.of());
+				// recibos de entrega: essencial para diagnosticar envio aceito
+				// pela Meta mas não entregue (erro só aparece aqui)
+				for (Map<String, Object> status : (List<Map<String, Object>>) value.getOrDefault("statuses",
+						List.of())) {
+					Object errors = status.get("errors");
+					if ("failed".equals(status.get("status")) || errors != null) {
+						log.warn("WhatsApp status de entrega: id={} status={} destinatario={} erros={}",
+								status.get("id"), status.get("status"), status.get("recipient_id"), errors);
+					}
+					else {
+						log.info("WhatsApp status de entrega: id={} status={} destinatario={}", status.get("id"),
+								status.get("status"), status.get("recipient_id"));
+					}
+				}
 				String profileName = extractProfileName(value);
 				for (Map<String, Object> message : (List<Map<String, Object>>) value.getOrDefault("messages",
 						List.of())) {
