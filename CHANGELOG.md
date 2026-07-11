@@ -17,6 +17,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Verificação E2E visual obrigatória (audit.mjs + Playwright) antes de qualquer entrega de UI.
 
 ### Adicionado
+- Pedido explícito de humano agora transfere DE VERDADE: a IA mandava "vou te encaminhar" e continuava na conversa — agora o gerador sinaliza a transferência, o cliente recebe o aviso de cortesia e a conversa vai para a fila humana com registro no livro-razão, mesmo com confiança alta.
+- Persona do atendente virtual: campo "nome do atendente" nas configurações da IA — ela responde como essa pessoa (ex.: o corretor que divulga no próprio número), com linguagem natural, sem se apresentar como IA por conta própria (e sem mentir se perguntarem). O widget mostra o mesmo rótulo para IA e humano; a distinção fica só no dashboard e no livro-razão.
+- Status das conversas renomeados para se explicarem sozinhos: "Precisa de você" (ninguém assumiu), "IA cuidando", "Com atendente", "Resolvida" — com explicação ao passar o mouse.
 - Atualizar credenciais de canal sem reconectar (`PUT /api/channels/{id}/credentials`): mescla com as existentes — trocar só o access_token da Meta (expira em ~24h no modo teste) preserva webhook_token/verify_token e a URL configurada no painel do provedor; formulário no card do canal.
 - Ciclo de vida completo nas telas (feedback de uso real): excluir negócio no pipeline, desativar/reativar/excluir canal (excluir só sem conversas no histórico), e arquivar conversa — some das listas preservando o histórico e desarquiva sozinha se o cliente escrever de novo.
 - Recibos de entrega do WhatsApp logados (statuses): falha de entrega da Meta agora aparece no log com o código real — foi assim que se descobriu o bloqueio 130497 (número de teste dos EUA não envia para o Brasil).

@@ -29,10 +29,16 @@ function SettingsForm({ settings }: { settings: AiSettings }) {
   const [enabled, setEnabled] = useState(settings.enabled);
   const [threshold, setThreshold] = useState(settings.confidenceThreshold);
   const [tone, setTone] = useState(settings.tone ?? "");
+  const [assistantName, setAssistantName] = useState(settings.assistantName ?? "");
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      api.updateAiSettings({ enabled, confidenceThreshold: threshold, tone: tone || null }),
+      api.updateAiSettings({
+        enabled,
+        confidenceThreshold: threshold,
+        tone: tone || null,
+        assistantName: assistantName.trim() || null,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ai-settings"] }),
   });
 
@@ -77,6 +83,20 @@ function SettingsForm({ settings }: { settings: AiSettings }) {
           <span className="flex justify-between text-xs text-ink-soft">
             <span>Mais autonomia</span>
             <span>Mais handoff para humanos</span>
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Nome do atendente virtual (opcional)</span>
+          <input
+            value={assistantName}
+            onChange={(event) => setAssistantName(event.target.value)}
+            placeholder="ex.: Rafael — a IA responde como essa pessoa, sem parecer robô"
+            className="rounded-md border border-line bg-paper px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+          <span className="text-xs text-ink-soft">
+            Para o cliente é essa pessoa respondendo; aqui dentro o livro-razão continua marcando o
+            que foi IA. Se perguntarem diretamente se é um robô, ela não mente.
           </span>
         </label>
 

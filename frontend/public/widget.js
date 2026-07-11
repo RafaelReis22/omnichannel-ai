@@ -125,7 +125,7 @@
     if (kind !== "contact") {
       var who = document.createElement("div");
       who.className = "who";
-      who.textContent = kind === "ai" ? "Assistente" : "Atendente";
+      who.textContent = "Atendente"; // cliente não distingue IA de humano
       div.appendChild(who);
     }
     if (message.kind === "IMAGE" && message.mediaUrl) {

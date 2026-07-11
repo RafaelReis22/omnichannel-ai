@@ -14,9 +14,9 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  OPEN: "Aguardando",
-  WITH_AI: "Com IA",
-  WITH_HUMAN: "Com agente",
+  OPEN: "Precisa de você",
+  WITH_AI: "IA cuidando",
+  WITH_HUMAN: "Com atendente",
   RESOLVED: "Resolvida",
 };
 

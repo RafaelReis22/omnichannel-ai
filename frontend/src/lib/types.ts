@@ -87,6 +87,7 @@ export interface AiSettings {
   enabled: boolean;
   confidenceThreshold: number;
   tone: string | null;
+  assistantName: string | null;
 }
 
 export interface LedgerEntry {

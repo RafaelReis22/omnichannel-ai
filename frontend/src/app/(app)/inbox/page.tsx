@@ -9,9 +9,9 @@ import { ConversationView } from "@/components/inbox/conversation-view";
 
 const FILTERS: { value: ConversationStatus | ""; label: string }[] = [
   { value: "", label: "Todas" },
-  { value: "OPEN", label: "Aguardando" },
-  { value: "WITH_AI", label: "Com IA" },
-  { value: "WITH_HUMAN", label: "Com agente" },
+  { value: "OPEN", label: "Precisa de você" },
+  { value: "WITH_AI", label: "IA cuidando" },
+  { value: "WITH_HUMAN", label: "Com atendente" },
   { value: "RESOLVED", label: "Resolvidas" },
 ];
 
