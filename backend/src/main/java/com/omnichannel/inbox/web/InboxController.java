@@ -43,14 +43,17 @@ class InboxController {
 	private final com.omnichannel.inbox.SearchService searchService;
 	private final com.omnichannel.inbox.domain.ContactRepository contactRepository;
 	private final com.omnichannel.channels.ChannelDirectory channelDirectory;
+	private final com.omnichannel.shared.storage.StorageService storageService;
 
 	InboxController(InboxService inboxService, com.omnichannel.inbox.SearchService searchService,
 			com.omnichannel.inbox.domain.ContactRepository contactRepository,
-			com.omnichannel.channels.ChannelDirectory channelDirectory) {
+			com.omnichannel.channels.ChannelDirectory channelDirectory,
+			com.omnichannel.shared.storage.StorageService storageService) {
 		this.inboxService = inboxService;
 		this.searchService = searchService;
 		this.contactRepository = contactRepository;
 		this.channelDirectory = channelDirectory;
+		this.storageService = storageService;
 	}
 
 	record ConversationResponse(UUID id, UUID contactId, String contactName, UUID channelId, String channelType,
@@ -81,10 +84,12 @@ class InboxController {
 
 	record MessageResponse(UUID id, String sender, String kind, String text, String mediaUrl, UUID senderUserId,
 			Instant createdAt) {
-		static MessageResponse from(Message m) {
-			return new MessageResponse(m.getId(), m.getSender().name(), m.getKind().name(), m.getText(),
-					m.getMediaUrl(), m.getSenderUserId(), m.getCreatedAt());
-		}
+	}
+
+	/** mediaUrl interno (storage://) vira URL pré-assinada de vida curta. */
+	private MessageResponse toMessageResponse(Message m) {
+		return new MessageResponse(m.getId(), m.getSender().name(), m.getKind().name(), m.getText(),
+				storageService.resolveUrl(m.getMediaUrl()), m.getSenderUserId(), m.getCreatedAt());
 	}
 
 	record AssignRequest(@NotNull UUID userId) {
@@ -121,7 +126,7 @@ class InboxController {
 			@RequestParam(defaultValue = "50") int size) {
 		inboxService.getConversation(id); // 404 antes de listar
 		return inboxService.messagesOf(id, PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE)))
-			.map(MessageResponse::from);
+			.map(this::toMessageResponse);
 	}
 
 	@PostMapping("/conversations/{id}/assign")
@@ -144,7 +149,7 @@ class InboxController {
 	MessageResponse reply(@PathVariable UUID id, @Valid @RequestBody ReplyRequest request,
 			JwtAuthenticationToken authentication) {
 		UUID agentUserId = UUID.fromString(authentication.getToken().getSubject());
-		return MessageResponse.from(inboxService.replyAsAgent(id, agentUserId, request.toContent()));
+		return toMessageResponse(inboxService.replyAsAgent(id, agentUserId, request.toContent()));
 	}
 
 	record NoteRequest(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 4000) String text) {

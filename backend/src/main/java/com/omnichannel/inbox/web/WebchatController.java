@@ -56,13 +56,15 @@ class WebchatController {
 	private final InboundMessageGateway gateway;
 	private final InboxService inboxService;
 	private final RateLimiter rateLimiter;
+	private final com.omnichannel.shared.storage.StorageService storageService;
 
 	WebchatController(ChannelDirectory channelDirectory, InboundMessageGateway gateway, InboxService inboxService,
-			RateLimiter rateLimiter) {
+			RateLimiter rateLimiter, com.omnichannel.shared.storage.StorageService storageService) {
 		this.channelDirectory = channelDirectory;
 		this.gateway = gateway;
 		this.inboxService = inboxService;
 		this.rateLimiter = rateLimiter;
+		this.storageService = storageService;
 	}
 
 	record VisitorMessageRequest(
@@ -74,10 +76,11 @@ class WebchatController {
 
 	record VisitorMessageResponse(UUID id, String sender, String kind, String text, String mediaUrl,
 			Instant createdAt) {
-		static VisitorMessageResponse from(Message message) {
-			return new VisitorMessageResponse(message.getId(), message.getSender().name(), message.getKind().name(),
-					message.getText(), message.getMediaUrl(), message.getCreatedAt());
-		}
+	}
+
+	private VisitorMessageResponse toVisitorResponse(Message message) {
+		return new VisitorMessageResponse(message.getId(), message.getSender().name(), message.getKind().name(),
+				message.getText(), storageService.resolveUrl(message.getMediaUrl()), message.getCreatedAt());
 	}
 
 	@PostMapping("/messages")
@@ -106,7 +109,7 @@ class WebchatController {
 		try {
 			return inboxService.webchatThread(channelId, visitorId, after == null ? EPOCH : after)
 				.stream()
-				.map(VisitorMessageResponse::from)
+				.map(this::toVisitorResponse)
 				.toList();
 		}
 		finally {
