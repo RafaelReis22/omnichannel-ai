@@ -146,7 +146,15 @@ const searchText = await page.textContent("body");
 if (!searchText.includes("Mensagem")) problems.push("busca por 'telefone' não retornou resultados visíveis");
 await page.fill('input[type="search"]', "");
 
-// 8. pipeline, conhecimento, ia
+// 8. relatórios (dados do próprio fluxo da auditoria)
+await page.click('a[href="/relatorios"]');
+await page.waitForTimeout(1200);
+await shot("13-relatorios");
+const reportText = await page.textContent("body");
+if (!reportText.includes("Novas conversas")) problems.push("página Relatórios não carregou os cards");
+if (!reportText.includes("Chat do site")) problems.push("distribuição por canal não apareceu nos Relatórios");
+
+// 8b. pipeline, conhecimento, ia
 await page.click('a[href="/pipeline"]');
 await page.waitForTimeout(800);
 await shot("09-pipeline");
