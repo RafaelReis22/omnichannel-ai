@@ -47,5 +47,25 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio:latest
+    container_name: omnichannel-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio-local
+      MINIO_ROOT_PASSWORD: changeme-local-only
+    ports:
+      # 9002/9003 no host para não colidir com outros serviços locais
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres-data:
+  minio-data:

@@ -17,6 +17,7 @@
 		<java.version>21</java.version>
 		<spring-modulith.version>1.4.12</spring-modulith.version>
 		<spring-ai.version>1.0.0</spring-ai.version>
+		<aws-sdk.version>2.46.7</aws-sdk.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -83,6 +84,30 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<!-- Mídia em object storage S3-compatível (R2/MinIO — docs/04).
+		     apache5-client excluído de propósito: httpclient5 no classpath faz
+		     RestTemplateBuilder/TestRestTemplate trocarem o client JDK pelo
+		     Apache, que re-tenta 429/503 honrando Retry-After — mudaria o
+		     comportamento HTTP do app inteiro. O SDK usa o
+		     url-connection-client (JDK puro) abaixo. -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>apache5-client</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>url-connection-client</artifactId>
 		</dependency>
 		<!-- Servidor SMTP/IMAP em memória para testes do canal de e-mail -->
 		<dependency>
@@ -190,6 +215,11 @@
 			<artifactId>rabbitmq</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>minio</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -204,6 +234,13 @@
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
 				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws-sdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

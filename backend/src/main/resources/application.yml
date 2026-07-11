@@ -36,6 +36,11 @@ spring:
           max-attempts: 3
           multiplier: 2
 
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 16MB
+
   threads:
     virtual:
       enabled: true
@@ -70,6 +75,13 @@ spring:
         index-type: HNSW
 
 app:
+  storage:
+    # S3-compatível: R2 em produção, MinIO local (docker compose)
+    endpoint: ${S3_ENDPOINT:http://localhost:9002}
+    access-key-id: ${S3_ACCESS_KEY_ID:minio-local}
+    secret-access-key: ${S3_SECRET_ACCESS_KEY:changeme-local-only}
+    bucket: ${S3_BUCKET:omnichannel-media}
+    region: ${S3_REGION:auto}
   channels:
     # AES-256 p/ credenciais de canal em repouso — gere com: openssl rand -base64 32
     credentials-key: ${CHANNEL_CREDENTIALS_KEY:}
