@@ -116,6 +116,28 @@ await shot("07c-conversa-tag");
 const tagText = await page.textContent("body");
 if (!tagText.includes("vip")) problems.push("tag adicionada não apareceu na conversa/lista");
 
+// 6d. agendar reunião pela conversa e conferir na página Agenda
+await page.click('button:has-text("Agendar")');
+await page.waitForTimeout(400);
+const amanha = new Date(Date.now() + 24 * 3600 * 1000);
+const localValue = `${amanha.getFullYear()}-${String(amanha.getMonth() + 1).padStart(2, "0")}-${String(amanha.getDate()).padStart(2, "0")}T14:30`;
+await page.fill('input[type="datetime-local"]', localValue);
+await page.click('button:has-text("Marcar")');
+await page.waitForTimeout(1200);
+await shot("07d-conversa-agendar");
+if (!(await page.locator('button:has-text("Agendado ✓")').count()))
+  problems.push("agendamento pela conversa não confirmou (botão não virou Agendado ✓)");
+await page.click('a[href="/agenda"]');
+await page.waitForTimeout(1000);
+await shot("07e-agenda");
+const agendaText = await page.textContent("body");
+if (!agendaText.includes("Reunião — Cliente Auditoria")) problems.push("compromisso não apareceu na página Agenda");
+if (!agendaText.includes("14:30")) problems.push("horário do compromisso não apareceu na Agenda");
+await page.click('a[href="/inbox"]');
+await page.waitForTimeout(800);
+await page.locator("li button").first().click();
+await page.waitForTimeout(600);
+
 // 7. busca
 await page.fill('input[type="search"]', "telefone");
 await page.waitForTimeout(900);
