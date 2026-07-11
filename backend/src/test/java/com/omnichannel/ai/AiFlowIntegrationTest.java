@@ -169,6 +169,39 @@ class AiFlowIntegrationTest {
 	}
 
 	@Test
+	void pedidoExplicitoDeHumanoTransfereDeVerdadeMesmoComConfiancaAlta() {
+		// a IA está confiante E o cliente pediu uma pessoa: a promessa de
+		// encaminhar tem que virar handoff real, não só uma frase educada
+		FakeAnswerGenerator.nextConfidence = 0.95;
+		FakeAnswerGenerator.nextAnswer = "Claro! Vou te passar para alguém da equipe agora mesmo.";
+		FakeAnswerGenerator.nextHandoffRequested = true;
+
+		gateway.receive(inbound("cliente-humano", "m-humano", "quero falar com um responsável"));
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				List<ResolutionLedgerEntry> ledger = ledgerRepository.findAll();
+				assertThat(ledger).hasSize(1);
+				ResolutionLedgerEntry entry = ledger.getFirst();
+				assertThat(entry.getAction()).isEqualTo(ResolutionLedgerEntry.Action.HANDOFF);
+				assertThat(entry.getHandoffSummary()).contains("Cliente pediu atendimento humano");
+
+				// o cliente recebeu a mensagem de cortesia E a conversa foi
+				// para a fila humana — a promessa foi cumprida
+				var conversation = conversationRepository.findById(entry.getConversationId()).orElseThrow();
+				assertThat(conversation.getStatus()).isEqualTo(ConversationStatus.OPEN);
+				assertThat(messageRepository.findTop10ByConversationIdOrderByCreatedAtDesc(entry.getConversationId()))
+					.anyMatch(message -> message.getSender() == MessageSender.AI
+							&& message.getText().contains("passar para alguém"));
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+	}
+
+	@Test
 	void conversaComHumanoNaoRecebeInterferenciaDaIa() {
 		FakeAnswerGenerator.nextConfidence = 0.99;
 

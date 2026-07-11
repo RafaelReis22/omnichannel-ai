@@ -37,6 +37,9 @@ public class AiSettings {
 	@Column
 	private String tone;
 
+	@Column(name = "assistant_name")
+	private String assistantName;
+
 	@UpdateTimestamp
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
@@ -47,10 +50,11 @@ public class AiSettings {
 		this.confidenceThreshold = DEFAULT_THRESHOLD;
 	}
 
-	public void update(boolean enabled, BigDecimal confidenceThreshold, String tone) {
+	public void update(boolean enabled, BigDecimal confidenceThreshold, String tone, String assistantName) {
 		this.enabled = enabled;
 		this.confidenceThreshold = confidenceThreshold;
 		this.tone = tone;
+		this.assistantName = assistantName;
 	}
 
 	public boolean allowsAutonomousAnswer(double confidence) {

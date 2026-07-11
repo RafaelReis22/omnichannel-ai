@@ -46,16 +46,18 @@ class AiController {
 		this.ledgerRepository = ledgerRepository;
 	}
 
-	record SettingsResponse(boolean enabled, BigDecimal confidenceThreshold, String tone) {
+	record SettingsResponse(boolean enabled, BigDecimal confidenceThreshold, String tone, String assistantName) {
 		static SettingsResponse from(AiSettings settings) {
-			return new SettingsResponse(settings.isEnabled(), settings.getConfidenceThreshold(), settings.getTone());
+			return new SettingsResponse(settings.isEnabled(), settings.getConfidenceThreshold(), settings.getTone(),
+					settings.getAssistantName());
 		}
 	}
 
 	record UpdateSettingsRequest(
 			@NotNull Boolean enabled,
 			@NotNull @DecimalMin("0.0") @DecimalMax("1.0") BigDecimal confidenceThreshold,
-			@Size(max = 500) String tone) {
+			@Size(max = 500) String tone,
+			@Size(max = 80) String assistantName) {
 	}
 
 	record LedgerEntryResponse(UUID id, UUID conversationId, String action, BigDecimal confidence,
@@ -76,7 +78,7 @@ class AiController {
 	@PreAuthorize("hasRole('ADMIN')")
 	SettingsResponse update(@Valid @RequestBody UpdateSettingsRequest request) {
 		return SettingsResponse.from(aiSettingsService.update(TenantContext.getTenantId(), request.enabled(),
-				request.confidenceThreshold(), request.tone()));
+				request.confidenceThreshold(), request.tone(), request.assistantName()));
 	}
 
 	@GetMapping("/ledger")

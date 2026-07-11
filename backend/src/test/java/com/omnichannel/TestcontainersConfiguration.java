@@ -117,18 +117,20 @@ public class TestcontainersConfiguration {
 
 		public static volatile double nextConfidence = 0.95;
 		public static volatile String nextAnswer = "resposta-de-teste";
+		public static volatile boolean nextHandoffRequested = false;
 		public static final List<AnswerRequest> received = new CopyOnWriteArrayList<>();
 
 		public static void reset() {
 			nextConfidence = 0.95;
 			nextAnswer = "resposta-de-teste";
+			nextHandoffRequested = false;
 			received.clear();
 		}
 
 		@Override
 		public GeneratedAnswer generate(AnswerRequest request) {
 			received.add(request);
-			return new GeneratedAnswer(nextAnswer, nextConfidence);
+			return new GeneratedAnswer(nextAnswer, nextConfidence, nextHandoffRequested);
 		}
 
 		@Override

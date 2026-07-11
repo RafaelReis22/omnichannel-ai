@@ -15,12 +15,18 @@ public interface AnswerGenerator {
 	/** Resumo curto da conversa para o humano assumir com contexto no handoff. */
 	String summarize(List<ChatTurn> history);
 
-	record AnswerRequest(String tenantTone, List<String> knowledgeChunks, List<ChatTurn> history, String question) {
+	record AnswerRequest(String tenantTone, String assistantName, List<String> knowledgeChunks,
+			List<ChatTurn> history, String question) {
 	}
 
 	record ChatTurn(String role, String text) {
 	}
 
-	record GeneratedAnswer(String text, double confidence) {
+	/** {@code handoffRequested}: o cliente pediu explicitamente um humano — transferir de verdade. */
+	record GeneratedAnswer(String text, double confidence, boolean handoffRequested) {
+
+		public GeneratedAnswer(String text, double confidence) {
+			this(text, confidence, false);
+		}
 	}
 }

@@ -70,10 +70,14 @@ class AiWorker {
 			boolean confident;
 			try {
 				answer = answerGenerator.generate(new AnswerGenerator.AnswerRequest(context.tone(),
-						context.knowledgeChunks(), context.history(), event.text()));
-				confident = BigDecimal.valueOf(answer.confidence()).compareTo(context.threshold()) >= 0;
+						context.assistantName(), context.knowledgeChunks(), context.history(), event.text()));
+				// pedido explícito de humano vence o portão de confiança
+				confident = !answer.handoffRequested()
+						&& BigDecimal.valueOf(answer.confidence()).compareTo(context.threshold()) >= 0;
 				// resumo do handoff também é LLM: fora de transação
-				handoffSummary = confident ? null : answerGenerator.summarize(context.history());
+				handoffSummary = confident ? null
+						: (answer.handoffRequested() ? "Cliente pediu atendimento humano. " : "")
+								+ answerGenerator.summarize(context.history());
 			}
 			catch (Exception llmFailure) {
 				// FAIL-OPEN: LLM indisponível não pode deixar o cliente no vácuo.
@@ -96,8 +100,8 @@ class AiWorker {
 		}
 	}
 
-	private record DecisionContext(String tone, BigDecimal threshold, List<String> knowledgeChunks,
-			List<AnswerGenerator.ChatTurn> history) {
+	private record DecisionContext(String tone, String assistantName, BigDecimal threshold,
+			List<String> knowledgeChunks, List<AnswerGenerator.ChatTurn> history) {
 	}
 
 	private DecisionContext collectContext(ContactMessageRegistered event) {
@@ -121,7 +125,8 @@ class AiWorker {
 			.stream()
 			.map(message -> new AnswerGenerator.ChatTurn(message.getSender().name(), message.previewText()))
 			.toList();
-		return new DecisionContext(settings.getTone(), settings.getConfidenceThreshold(), chunks, history);
+		return new DecisionContext(settings.getTone(), settings.getAssistantName(),
+				settings.getConfidenceThreshold(), chunks, history);
 	}
 
 	private void apply(ContactMessageRegistered event, boolean confident, AnswerGenerator.GeneratedAnswer answer,
@@ -134,6 +139,13 @@ class AiWorker {
 					event.messageId(), aiMessage.getId(), answer.confidence()));
 		}
 		else {
+			// cortesia antes do handoff: se a IA preparou um aviso de
+			// transferência, o cliente recebe — a promessa é cumprida na linha
+			// seguinte, movendo a conversa para a fila humana de verdade
+			if (answer.handoffRequested() && answer.text() != null && !answer.text().isBlank()) {
+				inboxService.recordAiReply(event.conversationId(), MessageContent.text(answer.text()),
+						BigDecimal.valueOf(answer.confidence()));
+			}
 			inboxService.markNeedsHuman(event.conversationId());
 			ledgerRepository.save(ResolutionLedgerEntry.handoff(tenantId, event.conversationId(),
 					event.messageId(), answer.confidence(), handoffSummary));

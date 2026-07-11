@@ -25,8 +25,14 @@ public class AiSettingsService {
 
 	@Transactional
 	public AiSettings update(UUID tenantId, boolean enabled, BigDecimal confidenceThreshold, String tone) {
+		return update(tenantId, enabled, confidenceThreshold, tone, null);
+	}
+
+	@Transactional
+	public AiSettings update(UUID tenantId, boolean enabled, BigDecimal confidenceThreshold, String tone,
+			String assistantName) {
 		AiSettings settings = repository.findById(tenantId).orElseGet(() -> new AiSettings(tenantId));
-		settings.update(enabled, confidenceThreshold, tone);
+		settings.update(enabled, confidenceThreshold, tone, assistantName);
 		return repository.save(settings);
 	}
 }
