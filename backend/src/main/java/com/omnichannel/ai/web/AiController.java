@@ -40,10 +40,16 @@ class AiController {
 
 	private final AiSettingsService aiSettingsService;
 	private final ResolutionLedgerRepository ledgerRepository;
+	private final com.omnichannel.ai.ReplySuggestionService replySuggestionService;
 
-	AiController(AiSettingsService aiSettingsService, ResolutionLedgerRepository ledgerRepository) {
+	AiController(AiSettingsService aiSettingsService, ResolutionLedgerRepository ledgerRepository,
+			com.omnichannel.ai.ReplySuggestionService replySuggestionService) {
 		this.aiSettingsService = aiSettingsService;
 		this.ledgerRepository = ledgerRepository;
+		this.replySuggestionService = replySuggestionService;
+	}
+
+	record SuggestionResponse(String suggestion) {
 	}
 
 	record SettingsResponse(boolean enabled, BigDecimal confidenceThreshold, String tone, String assistantName) {
@@ -79,6 +85,17 @@ class AiController {
 	SettingsResponse update(@Valid @RequestBody UpdateSettingsRequest request) {
 		return SettingsResponse.from(aiSettingsService.update(TenantContext.getTenantId(), request.enabled(),
 				request.confidenceThreshold(), request.tone(), request.assistantName()));
+	}
+
+	/** Copiloto: rascunho de resposta para o atendente editar — nada é enviado. */
+	@PostMapping("/conversations/{conversationId}/suggest")
+	SuggestionResponse suggest(@PathVariable UUID conversationId) {
+		String suggestion = replySuggestionService.suggest(TenantContext.getTenantId(), conversationId);
+		if (suggestion == null) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+					"Sem sugestão para esta conversa no momento");
+		}
+		return new SuggestionResponse(suggestion);
 	}
 
 	@GetMapping("/ledger")

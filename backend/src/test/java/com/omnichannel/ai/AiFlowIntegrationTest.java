@@ -51,6 +51,9 @@ class AiFlowIntegrationTest {
 	InboundMessageGateway gateway;
 
 	@Autowired
+	ReplySuggestionService replySuggestionService;
+
+	@Autowired
 	ChannelService channelService;
 
 	@Autowired
@@ -224,6 +227,40 @@ class AiFlowIntegrationTest {
 				TenantContext.clear();
 			}
 		});
+	}
+
+	@Test
+	void copilotoSugereRascunhoSemEnviarNadaAoCliente() {
+		// conversa cai para humano (confiança baixa)…
+		FakeAnswerGenerator.nextConfidence = 0.30;
+		gateway.receive(inbound("cliente-copiloto", "m-copiloto", "Preciso renegociar meu contrato"));
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(ledgerRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		// …e o atendente pede uma sugestão
+		FakeAnswerGenerator.nextAnswer = "Rascunho: podemos revisar as condições do seu contrato juntos.";
+		TenantContext.setTenantId(tenantId);
+		try {
+			UUID conversationId = conversationRepository.findAll().getFirst().getId();
+			long messagesBefore = messageRepository.count();
+
+			String suggestion = replySuggestionService.suggest(tenantId, conversationId);
+
+			assertThat(suggestion).contains("Rascunho: podemos revisar");
+			// nada persistido, nada enviado, nada no livro-razão além do handoff
+			assertThat(messageRepository.count()).isEqualTo(messagesBefore);
+			assertThat(ledgerRepository.count()).isEqualTo(1);
+		}
+		finally {
+			TenantContext.clear();
+		}
 	}
 
 	@Test
