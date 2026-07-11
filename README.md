@@ -1,5 +1,7 @@
 # omnichannel-ai
 
+> **Quer só VER funcionando?** Rode `./demo.sh` e siga o [COMO-TESTAR.md](COMO-TESTAR.md) — 1 comando, duas telas, IA respondendo.
+
 > Plataforma SaaS de atendimento omnichannel com IA. Nome comercial ainda em aberto — trocar antes do lançamento.
 
 Empresas conectam WhatsApp, Instagram, Messenger, e-mail e chat do site em um único painel; uma IA com RAG responde clientes, qualifica leads e transfere para humanos com transparência auditável — o [diferencial central](docs/01-visao-e-produto.md#diferenciais) frente aos 20 concorrentes pesquisados.
