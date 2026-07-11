@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { tokenStore } from "@/lib/auth";
@@ -9,10 +9,11 @@ import { AuthShell, Field, PrimaryButton } from "@/components/ui/auth-shell";
 
 export default function LoginPage() {
   const router = useRouter();
-  // já logado? direto para o trabalho
-  if (typeof window !== "undefined" && tokenStore.isLoggedIn()) {
-    router.replace("/inbox");
-  }
+  // já logado? direto para o trabalho — em effect: navegar durante a
+  // renderização dispara "Cannot update Router while rendering LoginPage"
+  useEffect(() => {
+    if (tokenStore.isLoggedIn()) router.replace("/inbox");
+  }, [router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState<string | null>(null);
