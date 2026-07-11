@@ -97,6 +97,15 @@ public class Message {
 
 	/** Texto, ou marcador do tipo de mídia, para o preview da lista. */
 	public String previewText() {
-		return text != null ? text : "[" + kind.name().toLowerCase() + "]";
+		if (text != null) {
+			return text;
+		}
+		return switch (kind) {
+			case IMAGE -> "📷 Imagem";
+			case VIDEO -> "🎬 Vídeo";
+			case AUDIO -> "🎙️ Áudio";
+			case DOCUMENT -> "📄 Documento";
+			case TEXT -> "";
+		};
 	}
 }

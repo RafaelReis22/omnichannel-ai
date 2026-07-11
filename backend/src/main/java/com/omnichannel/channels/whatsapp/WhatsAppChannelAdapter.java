@@ -38,15 +38,7 @@ class WhatsAppChannelAdapter implements ChannelAdapter {
 
 	@Override
 	public void send(OutboundMessage message, ChannelCredentials credentials) {
-		if (message.content().kind() != MessageKind.TEXT) {
-			throw new ChannelDeliveryException("WhatsApp: apenas texto no MVP (mídia na Fase 2)");
-		}
-		Map<String, Object> body = Map.of(
-				"messaging_product", "whatsapp",
-				"recipient_type", "individual",
-				"to", message.externalContactId(),
-				"type", "text",
-				"text", Map.of("body", message.content().text()));
+		Map<String, Object> body = buildPayload(message);
 		try {
 			if (credentials.values().containsKey("phone_number_id")) {
 				sendViaCloudApi(body, credentials);
@@ -58,6 +50,35 @@ class WhatsAppChannelAdapter implements ChannelAdapter {
 		catch (Exception e) {
 			throw new ChannelDeliveryException("Falha ao enviar WhatsApp: " + e.getMessage(), e);
 		}
+	}
+
+	/** Formato Cloud API, comum aos dois provedores; mídia vai por link (URL pré-assinada). */
+	private Map<String, Object> buildPayload(OutboundMessage message) {
+		var content = message.content();
+		var body = new java.util.HashMap<String, Object>();
+		body.put("messaging_product", "whatsapp");
+		body.put("recipient_type", "individual");
+		body.put("to", message.externalContactId());
+		if (content.kind() == MessageKind.TEXT) {
+			body.put("type", "text");
+			body.put("text", Map.of("body", content.text()));
+			return body;
+		}
+		String field = switch (content.kind()) {
+			case IMAGE -> "image";
+			case VIDEO -> "video";
+			case AUDIO -> "audio";
+			default -> "document";
+		};
+		var media = new java.util.HashMap<String, Object>();
+		media.put("link", content.mediaUrl());
+		// áudio não aceita caption na Cloud API
+		if (content.text() != null && !content.text().isBlank() && content.kind() != MessageKind.AUDIO) {
+			media.put("caption", content.text());
+		}
+		body.put("type", field);
+		body.put(field, media);
+		return body;
 	}
 
 	private void sendViaCloudApi(Map<String, Object> body, ChannelCredentials credentials) {

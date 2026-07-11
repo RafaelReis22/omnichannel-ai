@@ -45,6 +45,7 @@ import static org.awaitility.Awaitility.await;
 class MetaChannelsIntegrationTest {
 
 	static final List<String> GRAPH_REQUESTS = new CopyOnWriteArrayList<>();
+	static final byte[] PNG_BYTES = { (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 5, 4, 3 };
 	static HttpServer fakeGraph;
 
 	@Autowired
@@ -63,6 +64,9 @@ class MetaChannelsIntegrationTest {
 	com.omnichannel.ai.AiSettingsService aiSettingsService;
 
 	@Autowired
+	com.omnichannel.shared.storage.StorageService storageService;
+
+	@Autowired
 	org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
 	String adminToken;
@@ -75,10 +79,19 @@ class MetaChannelsIntegrationTest {
 		if (fakeGraph == null) {
 			fakeGraph = HttpServer.create(new InetSocketAddress(0), 0);
 			fakeGraph.createContext("/", exchange -> {
+				String path = exchange.getRequestURI().getPath();
 				GRAPH_REQUESTS.add(exchange.getRequestURI().toString() + "|"
 						+ new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-				exchange.sendResponseHeaders(200, 2);
-				exchange.getResponseBody().write("{}".getBytes(StandardCharsets.UTF_8));
+				if (path.startsWith("/cdn/")) {
+					// CDN da Meta servindo o anexo bruto
+					exchange.getResponseHeaders().set("Content-Type", "image/png");
+					exchange.sendResponseHeaders(200, PNG_BYTES.length);
+					exchange.getResponseBody().write(PNG_BYTES);
+				}
+				else {
+					exchange.sendResponseHeaders(200, 2);
+					exchange.getResponseBody().write("{}".getBytes(StandardCharsets.UTF_8));
+				}
 				exchange.close();
 			});
 			fakeGraph.start();
@@ -197,6 +210,59 @@ class MetaChannelsIntegrationTest {
 				TenantContext.clear();
 			}
 		});
+	}
+
+	@Test
+	void anexoDoMessengerVaiParaOStorageEAgenteRespondeComMidia() {
+		ConnectedMeta channel = connect("MESSENGER", "segredo-midia");
+		String cdnUrl = "http://127.0.0.1:" + fakeGraph.getAddress().getPort() + "/cdn/foto.png";
+		String body = """
+				{"object":"page","entry":[{"id":"pag-1","messaging":[{"sender":{"id":"psid-media"},
+				"message":{"mid":"mid.media1","text":"Chegou assim, veja","attachments":[
+				{"type":"image","payload":{"url":"%s"}}]}}]}]}""".formatted(cdnUrl);
+
+		assertThat(postSigned(channel.webhookPath(), body, "segredo-midia").getStatusCode())
+			.isEqualTo(HttpStatus.OK);
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(conversationRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		// agente enxerga IMAGE com legenda e URL pré-assinada servindo os bytes do CDN
+		TenantContext.setTenantId(tenantId);
+		UUID conversationId = conversationRepository.findAll().getFirst().getId();
+		TenantContext.clear();
+		HttpHeaders bearer = new HttpHeaders();
+		bearer.setBearerAuth(adminToken);
+		ResponseEntity<Map> messages = rest.exchange("/api/conversations/" + conversationId + "/messages",
+				HttpMethod.GET, new HttpEntity<>(bearer), Map.class);
+		Map<String, Object> received = ((List<Map<String, Object>>) messages.getBody().get("content")).getFirst();
+		assertThat(received).containsEntry("kind", "IMAGE").containsEntry("text", "Chegou assim, veja");
+		String presigned = (String) received.get("mediaUrl");
+		assertThat(presigned).startsWith("http").doesNotContain("storage://");
+		assertThat(new org.springframework.web.client.RestTemplate().getForObject(java.net.URI.create(presigned),
+				byte[].class)).isEqualTo(PNG_BYTES);
+
+		// resposta com mídia: attachment por URL + legenda como texto na sequência
+		GRAPH_REQUESTS.clear();
+		TenantContext.setTenantId(tenantId);
+		String storageKey = storageService.store(tenantId, "catalogo.png", "image/png", PNG_BYTES);
+		inboxService.replyAsAgent(conversationId, agentUserId,
+				com.omnichannel.channels.MessageContent.media(com.omnichannel.channels.MessageKind.IMAGE,
+						storageKey, "image/png", "Este é o modelo novo"));
+		TenantContext.clear();
+
+		List<String> sends = GRAPH_REQUESTS.stream().filter(r -> r.contains("/me/messages")).toList();
+		assertThat(sends).hasSize(2);
+		assertThat(sends.get(0)).contains("\"attachment\"").contains("\"type\":\"image\"").contains("\"url\":\"http")
+			.doesNotContain("storage://");
+		assertThat(sends.get(1)).contains("Este é o modelo novo");
 	}
 
 	@Test

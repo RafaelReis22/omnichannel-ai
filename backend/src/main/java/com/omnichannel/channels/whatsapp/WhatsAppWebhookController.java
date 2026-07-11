@@ -52,12 +52,20 @@ class WhatsAppWebhookController {
 	private final ChannelDirectory channelDirectory;
 	private final InboundMessageGateway gateway;
 	private final ObjectMapper objectMapper;
+	private final WhatsAppMediaClient mediaClient;
+	private final com.omnichannel.channels.domain.ChannelService channelService;
+	private final com.omnichannel.shared.storage.StorageService storageService;
 
 	WhatsAppWebhookController(ChannelDirectory channelDirectory, InboundMessageGateway gateway,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, WhatsAppMediaClient mediaClient,
+			com.omnichannel.channels.domain.ChannelService channelService,
+			com.omnichannel.shared.storage.StorageService storageService) {
 		this.channelDirectory = channelDirectory;
 		this.gateway = gateway;
 		this.objectMapper = objectMapper;
+		this.mediaClient = mediaClient;
+		this.channelService = channelService;
+		this.storageService = storageService;
 	}
 
 	/** Verificação de endpoint da Meta: o verify token é o próprio token da URL. */
@@ -94,46 +102,85 @@ class WhatsAppWebhookController {
 				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 			}
 		}
-		for (ParsedMessage parsed : parse(rawBody)) {
+		for (ParsedMessage parsed : parse(rawBody, channel)) {
 			gateway.receive(new InboundMessageReceived(channel.tenantId(), channel.channelId(),
 					ChannelType.WHATSAPP, parsed.from(), parsed.profileName(), parsed.messageId(),
-					MessageContent.text(parsed.text()), Instant.now()));
+					parsed.content(), Instant.now()));
 		}
 		return ResponseEntity.ok().build();
 	}
 
-	record ParsedMessage(String from, String profileName, String messageId, String text) {
+	record ParsedMessage(String from, String profileName, String messageId, MessageContent content) {
 	}
 
-	/** Extrai mensagens de texto do envelope Cloud API; ignora o resto (status etc.). */
+	private static final Map<String, com.omnichannel.channels.MessageKind> MEDIA_TYPES = Map.of(
+			"image", com.omnichannel.channels.MessageKind.IMAGE,
+			"video", com.omnichannel.channels.MessageKind.VIDEO,
+			"audio", com.omnichannel.channels.MessageKind.AUDIO,
+			"document", com.omnichannel.channels.MessageKind.DOCUMENT);
+
+	/**
+	 * Extrai mensagens de texto e mídia do envelope Cloud API; ignora o
+	 * resto (status, stickers etc.). Falha de download de mídia propaga —
+	 * o 500 faz o provedor reentregar, e o dedup por id absorve repetições.
+	 */
 	@SuppressWarnings("unchecked")
-	private List<ParsedMessage> parse(String rawBody) {
+	private List<ParsedMessage> parse(String rawBody, ChannelDirectory.PublicChannel channel) {
+		Map<String, Object> payload;
 		try {
-			Map<String, Object> payload = objectMapper.readValue(rawBody, new TypeReference<>() {
+			payload = objectMapper.readValue(rawBody, new TypeReference<>() {
 			});
-			var result = new java.util.ArrayList<ParsedMessage>();
-			for (Map<String, Object> entry : (List<Map<String, Object>>) payload.getOrDefault("entry", List.of())) {
-				for (Map<String, Object> change : (List<Map<String, Object>>) entry.getOrDefault("changes",
-						List.of())) {
-					Map<String, Object> value = (Map<String, Object>) change.getOrDefault("value", Map.of());
-					String profileName = extractProfileName(value);
-					for (Map<String, Object> message : (List<Map<String, Object>>) value.getOrDefault("messages",
-							List.of())) {
-						if (!"text".equals(message.get("type"))) {
-							continue; // mídia entra na Fase 2
-						}
-						Map<String, Object> text = (Map<String, Object>) message.get("text");
-						result.add(new ParsedMessage((String) message.get("from"), profileName,
-								(String) message.get("id"), (String) text.get("body")));
-					}
-				}
-			}
-			return result;
 		}
 		catch (Exception e) {
 			log.warn("Payload de webhook WhatsApp fora do formato esperado: {}", e.getMessage());
 			return List.of();
 		}
+		var result = new java.util.ArrayList<ParsedMessage>();
+		for (Map<String, Object> entry : (List<Map<String, Object>>) payload.getOrDefault("entry", List.of())) {
+			for (Map<String, Object> change : (List<Map<String, Object>>) entry.getOrDefault("changes",
+					List.of())) {
+				Map<String, Object> value = (Map<String, Object>) change.getOrDefault("value", Map.of());
+				String profileName = extractProfileName(value);
+				for (Map<String, Object> message : (List<Map<String, Object>>) value.getOrDefault("messages",
+						List.of())) {
+					MessageContent content = contentOf(message, channel);
+					if (content == null) {
+						continue;
+					}
+					result.add(new ParsedMessage((String) message.get("from"), profileName,
+							(String) message.get("id"), content));
+				}
+			}
+		}
+		return result;
+	}
+
+	@SuppressWarnings("unchecked")
+	private MessageContent contentOf(Map<String, Object> message, ChannelDirectory.PublicChannel channel) {
+		String type = (String) message.get("type");
+		if ("text".equals(type)) {
+			Map<String, Object> text = (Map<String, Object>) message.get("text");
+			return MessageContent.text((String) text.get("body"));
+		}
+		var kind = MEDIA_TYPES.get(type);
+		if (kind == null) {
+			return null; // status de entrega, sticker, reaction etc.
+		}
+		Map<String, Object> media = (Map<String, Object>) message.get(type);
+		String mediaId = (String) media.get("id");
+		var credentials = com.omnichannel.shared.tenancy.TenantContext
+			.runAsAuthProcess(() -> channelService.credentialsOf(channel.channelId()));
+		var downloaded = mediaClient.download(mediaId, credentials);
+		String filename = media.get("filename") instanceof String name ? name
+				: mediaId + extensionOf(downloaded.mimeType());
+		String storageKey = storageService.store(channel.tenantId(), filename, downloaded.mimeType(),
+				downloaded.bytes());
+		return MessageContent.media(kind, storageKey, downloaded.mimeType(), (String) media.get("caption"));
+	}
+
+	private String extensionOf(String mimeType) {
+		int slash = mimeType.indexOf('/');
+		return slash < 0 ? "" : "." + mimeType.substring(slash + 1).replaceAll("[^a-z0-9]", "");
 	}
 
 	@SuppressWarnings("unchecked")

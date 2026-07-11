@@ -47,6 +47,7 @@ import static org.awaitility.Awaitility.await;
 class WhatsAppChannelIntegrationTest {
 
 	static final List<CapturedRequest> BSP_REQUESTS = new CopyOnWriteArrayList<>();
+	static final byte[] PNG_BYTES = { (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 9, 8, 7 };
 
 	record CapturedRequest(String path, String apiKey, String body) {
 	}
@@ -72,6 +73,9 @@ class WhatsAppChannelIntegrationTest {
 	com.omnichannel.ai.AiSettingsService aiSettingsService;
 
 	@Autowired
+	com.omnichannel.shared.storage.StorageService storageService;
+
+	@Autowired
 	org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
 	String adminToken;
@@ -86,13 +90,27 @@ class WhatsAppChannelIntegrationTest {
 		if (fakeBsp == null) {
 			fakeBsp = HttpServer.create(new InetSocketAddress(0), 0);
 			fakeBsp.createContext("/", exchange -> {
+				String path = exchange.getRequestURI().getPath();
 				String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 				String auth = exchange.getRequestHeaders().getFirst("Authorization");
 				String apiKey = exchange.getRequestHeaders().getFirst("D360-API-KEY");
-				BSP_REQUESTS.add(new CapturedRequest(exchange.getRequestURI().getPath(),
-						apiKey != null ? apiKey : auth, body));
-				exchange.sendResponseHeaders(200, 2);
-				exchange.getResponseBody().write("{}".getBytes(StandardCharsets.UTF_8));
+				BSP_REQUESTS.add(new CapturedRequest(path, apiKey != null ? apiKey : auth, body));
+				byte[] response;
+				if (path.startsWith("/media-")) {
+					// metadado de mídia da Cloud API: aponta para o "CDN" local
+					response = ("{\"url\":\"http://127.0.0.1:" + fakeBsp.getAddress().getPort() + "/lookaside"
+							+ path + "\",\"mime_type\":\"image/png\"}").getBytes(StandardCharsets.UTF_8);
+					exchange.getResponseHeaders().set("Content-Type", "application/json");
+				}
+				else if (path.startsWith("/lookaside/")) {
+					response = PNG_BYTES;
+				}
+				else {
+					response = "{}".getBytes(StandardCharsets.UTF_8);
+					exchange.getResponseHeaders().set("Content-Type", "application/json");
+				}
+				exchange.sendResponseHeaders(200, response.length);
+				exchange.getResponseBody().write(response);
 				exchange.close();
 			});
 			fakeBsp.start();
@@ -239,6 +257,68 @@ class WhatsAppChannelIntegrationTest {
 		CapturedRequest sent = BSP_REQUESTS.getFirst();
 		assertThat(sent.path()).isEqualTo("/555000111/messages");
 		assertThat(sent.body()).contains("\"to\":\"5551977770000\"");
+	}
+
+	@Test
+	void cloudApiIngereImagemEAgenteRespondeComMidiaPorLink() {
+		CloudChannel channel = connectCloudChannel();
+
+		// visitante manda uma imagem com legenda
+		String body = """
+				{"object":"whatsapp_business_account","entry":[{"id":"123","changes":[{"field":"messages",
+				"value":{"messaging_product":"whatsapp",
+				"contacts":[{"profile":{"name":"Cliente Foto"},"wa_id":"5551966660000"}],
+				"messages":[{"from":"5551966660000","id":"wamid.img-1","timestamp":"1720000000","type":"image",
+				"image":{"id":"media-img-1","mime_type":"image/png","caption":"Serve nesse espaço?"}}]}}]}]}""";
+		HttpHeaders signed = new HttpHeaders();
+		signed.setContentType(MediaType.APPLICATION_JSON);
+		signed.set("X-Hub-Signature-256", "sha256=" + MetaSignatures.hmacSha256("segredo-meta", body));
+		assertThat(rest.exchange(channel.webhookPath(), HttpMethod.POST, new HttpEntity<>(body, signed), Void.class)
+			.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		// download da mídia usou o Bearer da Cloud API
+		assertThat(BSP_REQUESTS).anyMatch(r -> r.path().equals("/media-img-1") && "Bearer token-meta".equals(r.apiKey()));
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(conversationRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		// agente vê a imagem com URL pré-assinada que serve os bytes originais
+		TenantContext.setTenantId(tenantId);
+		UUID conversationId = conversationRepository.findAll().getFirst().getId();
+		TenantContext.clear();
+		HttpHeaders bearer = new HttpHeaders();
+		bearer.setBearerAuth(adminToken);
+		ResponseEntity<Map> messages = rest.exchange("/api/conversations/" + conversationId + "/messages",
+				HttpMethod.GET, new HttpEntity<>(bearer), Map.class);
+		Map<String, Object> received = ((List<Map<String, Object>>) messages.getBody().get("content")).getFirst();
+		assertThat(received).containsEntry("kind", "IMAGE").containsEntry("text", "Serve nesse espaço?");
+		String presigned = (String) received.get("mediaUrl");
+		assertThat(presigned).startsWith("http").doesNotContain("storage://");
+		assertThat(new org.springframework.web.client.RestTemplate().getForObject(java.net.URI.create(presigned),
+				byte[].class)).isEqualTo(PNG_BYTES);
+
+		// agente responde com mídia: payload Cloud API leva link pré-assinado + caption
+		TenantContext.setTenantId(tenantId);
+		String storageKey = storageService.store(tenantId, "planta.png", "image/png", PNG_BYTES);
+		inboxService.replyAsAgent(conversationId, agentUserId,
+				com.omnichannel.channels.MessageContent.media(com.omnichannel.channels.MessageKind.IMAGE,
+						storageKey, "image/png", "Cabe sim — veja a planta"));
+		TenantContext.clear();
+
+		CapturedRequest sent = BSP_REQUESTS.stream()
+			.filter(r -> r.path().equals("/555000111/messages"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(sent.body()).contains("\"type\":\"image\"").contains("\"link\":\"http")
+			.contains("Cabe sim — veja a planta")
+			.doesNotContain("storage://");
 	}
 
 	@Test

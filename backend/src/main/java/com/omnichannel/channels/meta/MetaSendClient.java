@@ -24,23 +24,40 @@ class MetaSendClient {
 
 	private final RestClient restClient = RestClient.create();
 
-	void sendText(OutboundMessage message, ChannelCredentials credentials, String channelLabel) {
-		if (message.content().kind() != MessageKind.TEXT) {
-			throw new ChannelDeliveryException(channelLabel + ": apenas texto no MVP (mídia na Fase 2)");
-		}
-		String baseUrl = credentials.values().getOrDefault("base_url", DEFAULT_BASE_URL);
+	void send(OutboundMessage message, ChannelCredentials credentials, String channelLabel) {
+		var content = message.content();
 		try {
-			restClient.post()
-				.uri(baseUrl + "/me/messages?access_token={token}", credentials.require("access_token"))
-				.contentType(MediaType.APPLICATION_JSON)
-				.body(Map.of(
-						"recipient", Map.of("id", message.externalContactId()),
-						"message", Map.of("text", message.content().text())))
-				.retrieve()
-				.toBodilessEntity();
+			if (content.kind() == MessageKind.TEXT) {
+				post(message.externalContactId(), Map.of("text", content.text()), credentials);
+				return;
+			}
+			String type = switch (content.kind()) {
+				case IMAGE -> "image";
+				case VIDEO -> "video";
+				case AUDIO -> "audio";
+				default -> "file";
+			};
+			post(message.externalContactId(), Map.of("attachment",
+					Map.of("type", type, "payload", Map.of("url", content.mediaUrl(), "is_reusable", false))),
+					credentials);
+			// a Messenger Platform não aceita caption no attachment — a
+			// legenda segue como mensagem de texto na sequência
+			if (content.text() != null && !content.text().isBlank()) {
+				post(message.externalContactId(), Map.of("text", content.text()), credentials);
+			}
 		}
 		catch (Exception e) {
 			throw new ChannelDeliveryException("Falha ao enviar " + channelLabel + ": " + e.getMessage(), e);
 		}
+	}
+
+	private void post(String recipientId, Map<String, Object> messagePayload, ChannelCredentials credentials) {
+		String baseUrl = credentials.values().getOrDefault("base_url", DEFAULT_BASE_URL);
+		restClient.post()
+			.uri(baseUrl + "/me/messages?access_token={token}", credentials.require("access_token"))
+			.contentType(MediaType.APPLICATION_JSON)
+			.body(Map.of("recipient", Map.of("id", recipientId), "message", messagePayload))
+			.retrieve()
+			.toBodilessEntity();
 	}
 }

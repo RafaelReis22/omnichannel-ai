@@ -24,6 +24,6 @@ class InstagramChannelAdapter implements ChannelAdapter {
 
 	@Override
 	public void send(OutboundMessage message, ChannelCredentials credentials) {
-		sendClient.sendText(message, credentials, "Instagram");
+		sendClient.send(message, credentials, "Instagram");
 	}
 }

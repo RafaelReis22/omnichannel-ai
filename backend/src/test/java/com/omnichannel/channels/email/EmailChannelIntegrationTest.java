@@ -69,6 +69,9 @@ class EmailChannelIntegrationTest {
 	@Autowired
 	InboxService inboxService;
 
+	@Autowired
+	com.omnichannel.shared.storage.StorageService storageService;
+
 	UUID tenantId;
 	UUID agentUserId;
 	Channel channel;
@@ -140,6 +143,43 @@ class EmailChannelIntegrationTest {
 			MimeMessage reply = received[received.length - 1];
 			assertThat(reply.getAllRecipients()[0].toString()).contains("cliente@fora.com");
 			assertThat(String.valueOf(reply.getContent())).contains("sai para entrega amanhã");
+		});
+	}
+
+	@Test
+	void respostaComMidiaViraAnexoDeVerdadeNoEmail() throws Exception {
+		byte[] pdf = "%PDF-1.4 conteudo-de-teste".getBytes();
+		GreenMailUtil.sendTextEmail(supportAddress, "cliente3@fora.com", "Contrato",
+				"Pode me mandar o contrato?", greenMail.getSmtp().getServerSetup());
+
+		await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(conversationRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		TenantContext.setTenantId(tenantId);
+		UUID conversationId = conversationRepository.findAll().getFirst().getId();
+		String storageKey = storageService.store(tenantId, "contrato.pdf", "application/pdf", pdf);
+		inboxService.replyAsAgent(conversationId, agentUserId,
+				com.omnichannel.channels.MessageContent.media(com.omnichannel.channels.MessageKind.DOCUMENT,
+						storageKey, "application/pdf", "Segue o contrato combinado."));
+		TenantContext.clear();
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			MimeMessage[] received = greenMail.getReceivedMessages();
+			MimeMessage reply = received[received.length - 1];
+			Object content = reply.getContent();
+			assertThat(content).isInstanceOf(jakarta.mail.internet.MimeMultipart.class);
+			var multipart = (jakarta.mail.internet.MimeMultipart) content;
+			assertThat(String.valueOf(multipart.getBodyPart(0).getContent())).contains("Segue o contrato");
+			var attachment = multipart.getBodyPart(1);
+			assertThat(attachment.getFileName()).isEqualTo("contrato.pdf");
+			assertThat(attachment.getInputStream().readAllBytes()).isEqualTo(pdf);
 		});
 	}
 
