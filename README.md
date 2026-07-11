@@ -32,6 +32,7 @@ Variáveis de ambiente: copie `.env.example` para `.env` e preencha (idem `front
 | [07-deploy.md](docs/07-deploy.md) | Estratégia de deploy e infraestrutura |
 | [08-testes.md](docs/08-testes.md) | Estratégia de testes |
 | [09-documentacao.md](docs/09-documentacao.md) | Como a documentação é mantida |
+| [10-teste-sem-custo.md](docs/10-teste-sem-custo.md) | Testar tudo de graça: Meta for Developers + Ollama + MinIO |
 | [docs/adr/](docs/adr/) | Decisões arquiteturais (ADRs) |
 
 A pesquisa de mercado que fundamenta o plano (Zendesk, Intercom, HubSpot, Freshdesk, Gorgias, Respond.io, ManyChat, Tidio, Crisp, Front, LiveChat, Salesforce, Microsoft Dynamics, Zoho Desk, Drift, Ada, Decagon, Sierra, Forethought, Kustomer, Help Scout e players LatAm) está resumida no contexto de cada documento.
