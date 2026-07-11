@@ -65,6 +65,10 @@ public class Channel {
 		this.status = ChannelStatus.ACTIVE;
 	}
 
+	public void replaceCredentials(String credentialsEncrypted) {
+		this.credentialsEncrypted = credentialsEncrypted;
+	}
+
 	public void disable() {
 		this.status = ChannelStatus.DISABLED;
 	}

@@ -118,6 +118,14 @@ class ChannelController {
 		return ChannelResponse.from(channelService.activate(id));
 	}
 
+	/** Rotação de token/segredo sem reconectar: mescla com as credenciais atuais. */
+	@org.springframework.web.bind.annotation.PutMapping("/{id}/credentials")
+	@PreAuthorize("hasRole('ADMIN')")
+	ChannelResponse updateCredentials(@PathVariable UUID id,
+			@RequestBody Map<String, String> credentials) {
+		return ChannelResponse.from(channelService.updateCredentials(id, credentials));
+	}
+
 	@org.springframework.web.bind.annotation.DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)

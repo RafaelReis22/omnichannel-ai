@@ -322,6 +322,53 @@ class WhatsAppChannelIntegrationTest {
 	}
 
 	@Test
+	void rotacaoDeTokenPreservaWebhookEUsaTokenNovoNoEnvio() {
+		CloudChannel channel = connectCloudChannel();
+
+		// troca SÓ o access_token (token da Meta expira em ~24h)
+		HttpHeaders headers = new HttpHeaders();
+		headers.setBearerAuth(adminToken);
+		ResponseEntity<Map> updated = rest.exchange("/api/channels/" + channel.channelId() + "/credentials",
+				HttpMethod.PUT, new HttpEntity<>(Map.of("access_token", "token-meta-novo"), headers), Map.class);
+		assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		// webhook_token/verify_token preservados: verificação da Meta continua passando
+		ResponseEntity<String> challenge = rest.getForEntity(channel.webhookPath()
+				+ "?hub.mode=subscribe&hub.verify_token=" + channel.verifyToken() + "&hub.challenge=pos-rotacao",
+				String.class);
+		assertThat(challenge.getBody()).isEqualTo("pos-rotacao");
+
+		// mensagem entra (assinada com o app_secret preservado) e a resposta sai com o token NOVO
+		String body = cloudApiPayload("5551955550000", "wamid.rot-1", "Ainda funciona?");
+		HttpHeaders signed = new HttpHeaders();
+		signed.setContentType(MediaType.APPLICATION_JSON);
+		signed.set("X-Hub-Signature-256", "sha256=" + MetaSignatures.hmacSha256("segredo-meta", body));
+		assertThat(rest.exchange(channel.webhookPath(), HttpMethod.POST, new HttpEntity<>(body, signed), Void.class)
+			.getStatusCode()).isEqualTo(HttpStatus.OK);
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(conversationRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		TenantContext.setTenantId(tenantId);
+		UUID conversationId = conversationRepository.findAll().getFirst().getId();
+		inboxService.replyAsAgent(conversationId, agentUserId,
+				com.omnichannel.channels.MessageContent.text("Funciona com o token novo!"));
+		TenantContext.clear();
+
+		CapturedRequest sent = BSP_REQUESTS.stream()
+			.filter(r -> r.path().equals("/555000111/messages"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(sent.apiKey()).isEqualTo("Bearer token-meta-novo");
+	}
+
+	@Test
 	void webhookComTokenErradoRecebe403ENadaEntra() {
 		HttpHeaders json = new HttpHeaders();
 		json.setContentType(MediaType.APPLICATION_JSON);

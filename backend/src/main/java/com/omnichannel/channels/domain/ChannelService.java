@@ -60,6 +60,27 @@ public class ChannelService {
 		return channel;
 	}
 
+	/**
+	 * Atualiza credenciais MESCLANDO com as existentes: só as chaves
+	 * enviadas (não vazias) mudam — trocar o access_token não pode apagar o
+	 * webhook_token/verify_token gerados no connect, senão a URL do webhook
+	 * no painel do provedor quebraria.
+	 */
+	@Transactional
+	public Channel updateCredentials(UUID channelId, Map<String, String> updates) {
+		Channel channel = channelRepository.findById(channelId)
+			.orElseThrow(() -> new ChannelNotAvailableException("Canal não encontrado"));
+		var merged = new java.util.HashMap<>(
+				fromJson(credentialsEncryption.decrypt(channel.getCredentialsEncrypted())));
+		updates.forEach((key, value) -> {
+			if (value != null && !value.isBlank()) {
+				merged.put(key, value);
+			}
+		});
+		channel.replaceCredentials(credentialsEncryption.encrypt(toJson(merged)));
+		return channel;
+	}
+
 	/** Exclusão real — o banco recusa (FK) se o canal já tem conversas. */
 	@Transactional
 	public void delete(UUID channelId) {
