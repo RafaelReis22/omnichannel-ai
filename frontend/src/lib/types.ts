@@ -127,6 +127,18 @@ export interface SearchHit {
   occurredAt: string;
 }
 
+export interface AnalyticsOverview {
+  newConversations: number;
+  resolvedConversations: number;
+  inboundMessages: number;
+  aiAnswered: number;
+  aiHandoffs: number;
+  medianFirstResponseSeconds: number | null;
+  conversationsPerDay: { day: string; count: number }[];
+  byChannelType: { label: string; count: number }[];
+  byStatus: { label: string; count: number }[];
+}
+
 export interface Appointment {
   id: string;
   contactId: string;

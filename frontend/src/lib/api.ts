@@ -154,6 +154,10 @@ export const api = {
     request<DealCard>(`/api/crm/deals/${dealId}/move`, { method: "POST", body: JSON.stringify({ stageId }) }),
   deleteDeal: (dealId: string) => request<void>(`/api/crm/deals/${dealId}`, { method: "DELETE" }),
 
+  // --- relatórios ---
+  analyticsOverview: (days: number) =>
+    request<import("./types").AnalyticsOverview>(`/api/analytics/overview?days=${days}`),
+
   // --- agenda ---
   appointments: () => request<import("./types").Appointment[]>("/api/appointments"),
   conversationAppointments: (conversationId: string) =>

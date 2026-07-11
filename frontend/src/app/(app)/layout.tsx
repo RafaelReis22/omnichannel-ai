@@ -14,6 +14,7 @@ const NAV = [
   { href: "/inbox", label: "Inbox" },
   { href: "/agenda", label: "Agenda" },
   { href: "/pipeline", label: "Pipeline" },
+  { href: "/relatorios", label: "Relatórios" },
   { href: "/canais", label: "Canais" },
   { href: "/conhecimento", label: "Conhecimento" },
   { href: "/ia", label: "IA & Livro-razão" },
