@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Unreleased]
 
 ### Corrigido
+- Contatos sem nome viravam código técnico ilegível nas telas ("vis-8dc43f23-…"): visitante anônimo do chat agora vira "Visitante abcd" e WhatsApp sem nome de perfil vira o telefone.
+- Nono dígito brasileiro no WhatsApp: a Meta entrega o remetente sem o 9 e recusava a resposta (#131030) — o envio agora recoloca o dígito.
+- Redirecionamento de usuário já logado na tela de login disparava aviso bloqueante do React em desenvolvimento.
 - Canais WhatsApp/Instagram/Messenger eram um beco sem saída na UI: agora têm campos de credencial por tipo e exibem a URL do webhook + verify token uma única vez após conectar, com botões de copiar.
 - Lista de conversas não mostrava o nome do contato nem o canal — inviável para uso contínuo.
 - IA com LLM indisponível deixava a conversa presa sem resposta: agora faz fail-open para a fila humana com registro explícito no livro-razão.
@@ -14,6 +17,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Verificação E2E visual obrigatória (audit.mjs + Playwright) antes de qualquer entrega de UI.
 
 ### Adicionado
+- Ciclo de vida completo nas telas (feedback de uso real): excluir negócio no pipeline, desativar/reativar/excluir canal (excluir só sem conversas no histórico), e arquivar conversa — some das listas preservando o histórico e desarquiva sozinha se o cliente escrever de novo.
+- Recibos de entrega do WhatsApp logados (statuses): falha de entrega da Meta agora aparece no log com o código real — foi assim que se descobriu o bloqueio 130497 (número de teste dos EUA não envia para o Brasil).
 - Relatórios operacionais (Fase 3): página Relatórios com período de 7/30/90 dias — novas conversas, mensagens recebidas, resolvidas, autonomia da IA (respostas vs. handoffs do livro-razão) e mediana do tempo de primeira resposta; gráfico de barras por dia e distribuição por canal e status (SVG próprio, sem lib). `GET /api/analytics/overview` calcula tudo em SQL com o RLS escopando por tenant automaticamente.
 - Agendamento de reuniões/visitas (Fase 2): botão "Agendar" no cabeçalho da conversa (título, data/hora, duração) cria compromisso ligado ao contato e à conversa; página Agenda agrupa por dia com concluir/cancelar e download do convite `.ics` (formato universal — Google/Outlook/Apple importam sem OAuth nesta fase). Tabela `appointments` com RLS; APIs `POST/GET /api/appointments`, `by-conversation`, `done`, `cancel`, `/{id}/ics`. Integração de calendário externo fica para quando houver deploy.
 - Edição de tags na conversa: chips no cabeçalho com adicionar/remover (Enter confirma, Esc cancela), refletidas na hora na lista do inbox — a API já existia, faltava a UI.
