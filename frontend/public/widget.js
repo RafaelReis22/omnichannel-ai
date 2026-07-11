@@ -128,9 +128,25 @@
       who.textContent = kind === "ai" ? "Assistente" : "Atendente";
       div.appendChild(who);
     }
-    var text = document.createElement("div");
-    text.textContent = message.text || "[" + (message.kind || "").toLowerCase() + "]";
-    div.appendChild(text);
+    if (message.kind === "IMAGE" && message.mediaUrl) {
+      var img = document.createElement("img");
+      img.src = message.mediaUrl;
+      img.alt = "Imagem";
+      img.style.cssText = "max-width:100%;max-height:200px;border-radius:8px;display:block";
+      div.appendChild(img);
+    } else if (message.kind && message.kind !== "TEXT" && message.mediaUrl) {
+      var link = document.createElement("a");
+      link.href = message.mediaUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Abrir anexo (" + message.kind.toLowerCase() + ")";
+      div.appendChild(link);
+    }
+    if (message.text || message.kind === "TEXT" || !message.mediaUrl) {
+      var text = document.createElement("div");
+      text.textContent = message.text || (message.kind === "TEXT" ? "" : "[" + (message.kind || "").toLowerCase() + "]");
+      if (text.textContent) div.appendChild(text);
+    }
     thread.appendChild(div);
     if (String(message.id).startsWith("local-")) {
       pendingEchoes.push(div);

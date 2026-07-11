@@ -127,6 +127,13 @@ export interface SearchHit {
   occurredAt: string;
 }
 
+export interface UploadedMedia {
+  mediaUrl: string;
+  previewUrl: string;
+  contentType: string;
+  kind: MessageKind;
+}
+
 export interface ConversationNote {
   id: string;
   authorUserId: string;

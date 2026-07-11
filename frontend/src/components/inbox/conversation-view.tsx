@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Message } from "@/lib/types";
+import type { Message, UploadedMedia } from "@/lib/types";
 import { StatusChip } from "@/components/ui/status-chip";
 
 export function ConversationView({ conversationId }: { conversationId: string }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
+  const [attachment, setAttachment] = useState<(UploadedMedia & { fileName: string }) | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversation } = useQuery({
@@ -35,12 +37,29 @@ export function ConversationView({ conversationId }: { conversationId: string })
   };
 
   const replyMutation = useMutation({
-    mutationFn: (text: string) => api.reply(conversationId, text),
+    mutationFn: () =>
+      attachment
+        ? api.reply(conversationId, {
+            kind: attachment.kind,
+            text: draft.trim() || null,
+            mediaUrl: attachment.mediaUrl,
+            mimeType: attachment.contentType,
+          })
+        : api.reply(conversationId, { kind: "TEXT", text: draft.trim() }),
     onSuccess: () => {
       setDraft("");
+      setAttachment(null);
       invalidate();
     },
   });
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => api.upload(file),
+    onSuccess: (media, file) => setAttachment({ ...media, fileName: file.name }),
+  });
+  const canSend = !!draft.trim() || !!attachment;
+  const send = () => {
+    if (canSend && !replyMutation.isPending) replyMutation.mutate();
+  };
   const assignMutation = useMutation({
     mutationFn: () => api.assign(conversationId, me!.id),
     onSuccess: invalidate,
@@ -112,29 +131,76 @@ export function ConversationView({ conversationId }: { conversationId: string })
       <NotesPanel conversationId={conversationId} />
 
       <footer className="border-t border-line p-4">
+        {attachment && (
+          <div className="mb-2 flex items-center gap-3 rounded-md border border-line bg-paper-sunken px-3 py-2">
+            {attachment.kind === "IMAGE" ? (
+              // preview pré-assinado de vida curta — só para conferência antes do envio
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={attachment.previewUrl} alt={attachment.fileName} className="h-12 w-12 rounded object-cover" />
+            ) : (
+              <span className="text-lg" aria-hidden>
+                📎
+              </span>
+            )}
+            <span className="min-w-0 flex-1 truncate text-sm">{attachment.fileName}</span>
+            <button
+              type="button"
+              onClick={() => setAttachment(null)}
+              aria-label="Remover anexo"
+              className="rounded px-2 py-0.5 text-sm text-ink-soft transition-colors hover:text-danger"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (draft.trim()) replyMutation.mutate(draft.trim());
+            send();
           }}
           className="flex items-end gap-2"
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*,audio/*,application/pdf"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) uploadMutation.mutate(file);
+              event.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadMutation.isPending}
+            title="Anexar imagem, vídeo, áudio ou PDF (até 15 MB)"
+            aria-label="Anexar arquivo"
+            className="rounded-md border border-line bg-paper-raised px-3 py-2.5 text-sm transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
+          >
+            {uploadMutation.isPending ? "…" : "📎"}
+          </button>
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                if (draft.trim()) replyMutation.mutate(draft.trim());
+                send();
               }
             }}
-            placeholder="Escreva sua resposta… (Enter envia, Shift+Enter quebra linha)"
+            placeholder={
+              attachment
+                ? "Legenda opcional… (Enter envia)"
+                : "Escreva sua resposta… (Enter envia, Shift+Enter quebra linha)"
+            }
             rows={2}
             className="min-h-[3rem] flex-1 resize-y rounded-md border border-line bg-paper-raised px-3 py-2 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
           <button
             type="submit"
-            disabled={replyMutation.isPending || !draft.trim()}
+            disabled={replyMutation.isPending || !canSend}
             className="rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             Enviar
@@ -142,6 +208,11 @@ export function ConversationView({ conversationId }: { conversationId: string })
         </form>
         {replyMutation.isError && (
           <p className="mt-2 text-sm text-danger">Falha ao enviar. Tente novamente.</p>
+        )}
+        {uploadMutation.isError && (
+          <p className="mt-2 text-sm text-danger">
+            {uploadMutation.error instanceof Error ? uploadMutation.error.message : "Falha no upload."}
+          </p>
         )}
       </footer>
     </div>
@@ -163,7 +234,9 @@ function MessageBubble({ message }: { message: Message }) {
         }`}
       >
         {fromAi && <p className="mb-0.5 text-[11px] font-semibold text-st-ai">IA</p>}
-        <p className="break-words whitespace-pre-wrap">{message.text ?? `[${message.kind.toLowerCase()}]`}</p>
+        <MediaContent message={message} />
+        {message.text && <p className="break-words whitespace-pre-wrap">{message.text}</p>}
+        {!message.text && message.kind === "TEXT" && <p className="italic opacity-60">(vazio)</p>}
         <time className="mt-1 block text-right font-mono text-[10px] opacity-60">
           {new Date(message.createdAt).toLocaleTimeString("pt-BR", {
             hour: "2-digit",
@@ -172,6 +245,35 @@ function MessageBubble({ message }: { message: Message }) {
         </time>
       </div>
     </li>
+  );
+}
+
+function MediaContent({ message }: { message: Message }) {
+  if (message.kind === "TEXT" || !message.mediaUrl) return null;
+  if (message.kind === "IMAGE") {
+    return (
+      <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block">
+        {/* URL pré-assinada expira em minutos — não vale cachear via next/image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={message.mediaUrl} alt="Imagem anexada" className="max-h-64 rounded-md object-contain" />
+      </a>
+    );
+  }
+  if (message.kind === "VIDEO") {
+    return <video src={message.mediaUrl} controls className="mb-1 max-h-64 rounded-md" />;
+  }
+  if (message.kind === "AUDIO") {
+    return <audio src={message.mediaUrl} controls className="mb-1 w-full min-w-48" />;
+  }
+  return (
+    <a
+      href={message.mediaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mb-1 inline-flex items-center gap-1.5 rounded-md bg-black/10 px-2.5 py-1.5 text-sm underline underline-offset-2"
+    >
+      <span aria-hidden>📄</span> Abrir documento
+    </a>
   );
 }
 

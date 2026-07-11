@@ -93,11 +93,28 @@ export const api = {
   conversation: (id: string) => request<Conversation>(`/api/conversations/${id}`),
   messages: (conversationId: string) =>
     request<Page<Message>>(`/api/conversations/${conversationId}/messages?size=100`),
-  reply: (conversationId: string, text: string) =>
+  reply: (
+    conversationId: string,
+    content: { kind: string; text?: string | null; mediaUrl?: string; mimeType?: string },
+  ) =>
     request<Message>(`/api/conversations/${conversationId}/reply`, {
       method: "POST",
-      body: JSON.stringify({ kind: "TEXT", text }),
+      body: JSON.stringify(content),
     }),
+  upload: async (file: File) => {
+    // multipart: sem Content-Type manual — o browser define o boundary
+    const form = new FormData();
+    form.append("file", file);
+    const headers = new Headers();
+    const token = tokenStore.access();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(`${BASE_URL}/api/uploads`, { method: "POST", body: form, headers });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new ApiError(response.status, body?.detail ?? `Erro ${response.status}`);
+    }
+    return (await response.json()) as import("./types").UploadedMedia;
+  },
   assign: (conversationId: string, userId: string) =>
     request<Conversation>(`/api/conversations/${conversationId}/assign`, {
       method: "POST",
