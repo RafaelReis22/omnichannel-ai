@@ -80,8 +80,15 @@ export function ConversationList({
                   </span>
                 )}
                 {conversation.tags.slice(0, 2).map((tag) => (
-                  <span key={tag} className="rounded bg-paper-sunken px-1.5 py-px text-[11px] text-ink-soft">
-                    {tag}
+                  <span
+                    key={tag}
+                    className={`rounded px-1.5 py-px text-[11px] ${
+                      tag === "possível venda"
+                        ? "bg-st-resolved-soft font-medium text-st-resolved"
+                        : "bg-paper-sunken text-ink-soft"
+                    }`}
+                  >
+                    {tag === "possível venda" ? "💰 possível venda" : tag}
                   </span>
                 ))}
               </span>
