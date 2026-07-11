@@ -152,6 +152,8 @@ export const api = {
     request<AiSettings>("/api/ai/settings", { method: "PUT", body: JSON.stringify(body) }),
   ledger: (page = 0) => request<Page<LedgerEntry>>(`/api/ai/ledger?page=${page}`),
   reviewLedger: (id: string) => request<LedgerEntry>(`/api/ai/ledger/${id}/review`, { method: "POST" }),
+  suggestReply: (conversationId: string) =>
+    request<{ suggestion: string }>(`/api/ai/conversations/${conversationId}/suggest`, { method: "POST" }),
 
   // --- CRM ---
   board: () => request<Board>("/api/crm/board"),

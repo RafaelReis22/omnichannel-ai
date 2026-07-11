@@ -56,6 +56,10 @@ export function ConversationView({ conversationId }: { conversationId: string })
     mutationFn: (file: File) => api.upload(file),
     onSuccess: (media, file) => setAttachment({ ...media, fileName: file.name }),
   });
+  const suggestMutation = useMutation({
+    mutationFn: () => api.suggestReply(conversationId),
+    onSuccess: (data) => setDraft(data.suggestion),
+  });
   const canSend = !!draft.trim() || !!attachment;
   const send = () => {
     if (canSend && !replyMutation.isPending) replyMutation.mutate();
@@ -206,6 +210,16 @@ export function ConversationView({ conversationId }: { conversationId: string })
           >
             {uploadMutation.isPending ? "…" : "📎"}
           </button>
+          <button
+            type="button"
+            onClick={() => suggestMutation.mutate()}
+            disabled={suggestMutation.isPending}
+            title="A IA escreve um rascunho baseado na conversa e na base de conhecimento — você edita e decide enviar"
+            aria-label="Sugerir resposta"
+            className="rounded-md border border-line bg-paper-raised px-3 py-2.5 text-sm transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
+          >
+            {suggestMutation.isPending ? "…" : "✨"}
+          </button>
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -238,6 +252,9 @@ export function ConversationView({ conversationId }: { conversationId: string })
           <p className="mt-2 text-sm text-danger">
             {uploadMutation.error instanceof Error ? uploadMutation.error.message : "Falha no upload."}
           </p>
+        )}
+        {suggestMutation.isError && (
+          <p className="mt-2 text-sm text-danger">A IA não conseguiu sugerir agora — tente de novo.</p>
         )}
       </footer>
     </div>

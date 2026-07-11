@@ -138,6 +138,17 @@ await page.waitForTimeout(800);
 await page.locator("li button").first().click();
 await page.waitForTimeout(600);
 
+// 6e. copiloto: pedir sugestão de resposta e conferir o rascunho preenchido
+await page.click('button[aria-label="Sugerir resposta"]');
+for (let i = 0; i < 20; i++) {
+  await page.waitForTimeout(1500);
+  if ((await page.inputValue("textarea")).length > 0) break;
+}
+await shot("07f-copiloto");
+if (!(await page.inputValue("textarea")).length)
+  problems.push("copiloto não preencheu o rascunho em 30s");
+await page.fill("textarea", ""); // limpa para não interferir nos próximos passos
+
 // 7. busca
 await page.fill('input[type="search"]', "telefone");
 await page.waitForTimeout(900);

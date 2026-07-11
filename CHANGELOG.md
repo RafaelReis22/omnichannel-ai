@@ -17,6 +17,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Verificação E2E visual obrigatória (audit.mjs + Playwright) antes de qualquer entrega de UI.
 
 ### Adicionado
+- Copiloto do atendente: botão ✨ no compositor gera um rascunho de resposta com base na conversa e na base de conhecimento — você edita e decide enviar. Nada é enviado nem registrado automaticamente: a decisão é humana, então não passa pelo portão de confiança nem entra no livro-razão.
 - Detecção de intenção de compra (Fase 3 — IA comercial): na mesma leitura de cada mensagem, a IA sinaliza quando o cliente demonstra intenção real de comprar/contratar/agendar; a conversa ganha a etiqueta "💰 possível venda" automaticamente, destacada na lista do Inbox — sem custo nem latência extra (mesma chamada de LLM).
 - Pedido explícito de humano agora transfere DE VERDADE: a IA mandava "vou te encaminhar" e continuava na conversa — agora o gerador sinaliza a transferência, o cliente recebe o aviso de cortesia e a conversa vai para a fila humana com registro no livro-razão, mesmo com confiança alta.
 - Persona do atendente virtual: campo "nome do atendente" nas configurações da IA — ela responde como essa pessoa (ex.: o corretor que divulga no próprio número), com linguagem natural, sem se apresentar como IA por conta própria (e sem mentir se perguntarem). O widget mostra o mesmo rótulo para IA e humano; a distinção fica só no dashboard e no livro-razão.
