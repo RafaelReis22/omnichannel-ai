@@ -3,15 +3,11 @@ package com.omnichannel.channels.meta;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,7 +81,7 @@ class MetaWebhookController {
 			@RequestBody String rawBody) {
 		Optional<MetaChannel> resolved = resolve(channelId);
 		if (resolved.isEmpty() || signature == null
-				|| !constantTimeEquals("sha256=" + hmacSha256(resolved.get().appSecret(), rawBody), signature)) {
+				|| !constantTimeEquals("sha256=" + MetaSignatures.hmacSha256(resolved.get().appSecret(), rawBody), signature)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		MetaChannel channel = resolved.get();
@@ -149,17 +145,6 @@ class MetaWebhookController {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> castMap(Object value) {
 		return value instanceof Map<?, ?> map ? (Map<String, Object>) map : null;
-	}
-
-	static String hmacSha256(String secret, String body) {
-		try {
-			Mac mac = Mac.getInstance("HmacSHA256");
-			mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-			return HexFormat.of().formatHex(mac.doFinal(body.getBytes(StandardCharsets.UTF_8)));
-		}
-		catch (Exception e) {
-			throw new IllegalStateException("HMAC-SHA256 indisponível na JVM", e);
-		}
 	}
 
 	private static boolean constantTimeEquals(String expected, String provided) {

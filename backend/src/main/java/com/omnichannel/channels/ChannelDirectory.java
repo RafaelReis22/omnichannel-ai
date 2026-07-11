@@ -37,6 +37,12 @@ public class ChannelDirectory {
 					.map(channel -> new PublicChannel(channel.getId(), channel.getTenantId(), channel.getType()))));
 	}
 
+	/** Uma credencial específica de um canal, sob contexto de sistema (webhooks). */
+	public Optional<String> credentialOf(UUID channelId, String key) {
+		return TenantContext.runAsAuthProcess(() -> transactionTemplate.execute(
+				status -> Optional.ofNullable(channelService.credentialsOf(channelId).values().get(key))));
+	}
+
 	/** Tipos por id, no contexto de tenant do chamador (lista do inbox). */
 	public java.util.Map<UUID, ChannelType> typesOf(java.util.Collection<UUID> channelIds) {
 		return channelService.typesOf(channelIds);

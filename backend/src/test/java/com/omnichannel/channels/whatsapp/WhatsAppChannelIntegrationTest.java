@@ -12,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.sun.net.httpserver.HttpServer;
 
 import com.omnichannel.TestcontainersConfiguration;
+import com.omnichannel.channels.meta.MetaSignatures;
 import com.omnichannel.channels.ChannelType;
 import com.omnichannel.inbox.InboxService;
 import com.omnichannel.inbox.domain.ContactRepository;
@@ -86,8 +87,10 @@ class WhatsAppChannelIntegrationTest {
 			fakeBsp = HttpServer.create(new InetSocketAddress(0), 0);
 			fakeBsp.createContext("/", exchange -> {
 				String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+				String auth = exchange.getRequestHeaders().getFirst("Authorization");
+				String apiKey = exchange.getRequestHeaders().getFirst("D360-API-KEY");
 				BSP_REQUESTS.add(new CapturedRequest(exchange.getRequestURI().getPath(),
-						exchange.getRequestHeaders().getFirst("D360-API-KEY"), body));
+						apiKey != null ? apiKey : auth, body));
 				exchange.sendResponseHeaders(200, 2);
 				exchange.getResponseBody().write("{}".getBytes(StandardCharsets.UTF_8));
 				exchange.close();
@@ -169,6 +172,73 @@ class WhatsAppChannelIntegrationTest {
 		assertThat(sent.path()).isEqualTo("/messages");
 		assertThat(sent.apiKey()).isEqualTo("chave-do-bsp");
 		assertThat(sent.body()).contains("\"to\":\"5551999990000\"").contains("Posso separar um para você?");
+	}
+
+	private record CloudChannel(String channelId, String webhookPath, String verifyToken) {
+	}
+
+	private CloudChannel connectCloudChannel() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setBearerAuth(adminToken);
+		ResponseEntity<Map> created = rest.exchange("/api/channels", HttpMethod.POST,
+				new HttpEntity<>(Map.of("type", "WHATSAPP", "name", "Zap Cloud", "credentials",
+						Map.of("phone_number_id", "555000111", "access_token", "token-meta",
+								"app_secret", "segredo-meta",
+								"base_url", "http://127.0.0.1:" + fakeBsp.getAddress().getPort())),
+						headers),
+				Map.class);
+		return new CloudChannel((String) created.getBody().get("id"),
+				(String) created.getBody().get("webhookPath"), (String) created.getBody().get("verifyToken"));
+	}
+
+	@Test
+	void cloudApiVerificaEndpointIngereAssinadoERespondePorPhoneNumberId() {
+		CloudChannel channel = connectCloudChannel();
+		assertThat(channel.verifyToken()).isNotBlank();
+
+		// GET de verificação da Meta: verify token é o token da URL
+		ResponseEntity<String> challenge = rest.getForEntity(channel.webhookPath()
+				+ "?hub.mode=subscribe&hub.verify_token=" + channel.verifyToken() + "&hub.challenge=meta-123",
+				String.class);
+		assertThat(challenge.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(challenge.getBody()).isEqualTo("meta-123");
+
+		// POST sem assinatura é recusado (canal tem app_secret)
+		String body = cloudApiPayload("5551977770000", "wamid.cloud-1", "Oi pela Cloud API!");
+		HttpHeaders json = new HttpHeaders();
+		json.setContentType(MediaType.APPLICATION_JSON);
+		assertThat(rest.exchange(channel.webhookPath(), HttpMethod.POST, new HttpEntity<>(body, json), Void.class)
+			.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+		// POST assinado é ingerido
+		HttpHeaders signed = new HttpHeaders();
+		signed.setContentType(MediaType.APPLICATION_JSON);
+		signed.set("X-Hub-Signature-256", "sha256="
+				+ MetaSignatures.hmacSha256("segredo-meta", body));
+		assertThat(rest.exchange(channel.webhookPath(), HttpMethod.POST, new HttpEntity<>(body, signed), Void.class)
+			.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+			TenantContext.setTenantId(tenantId);
+			try {
+				assertThat(conversationRepository.count()).isEqualTo(1);
+			}
+			finally {
+				TenantContext.clear();
+			}
+		});
+
+		// resposta sai pela Cloud API: /{phone_number_id}/messages com Bearer
+		TenantContext.setTenantId(tenantId);
+		UUID conversationId = conversationRepository.findAll().getFirst().getId();
+		inboxService.replyAsAgent(conversationId, agentUserId,
+				com.omnichannel.channels.MessageContent.text("Recebido pela Cloud API!"));
+		TenantContext.clear();
+
+		assertThat(BSP_REQUESTS).hasSize(1);
+		CapturedRequest sent = BSP_REQUESTS.getFirst();
+		assertThat(sent.path()).isEqualTo("/555000111/messages");
+		assertThat(sent.body()).contains("\"to\":\"5551977770000\"");
 	}
 
 	@Test

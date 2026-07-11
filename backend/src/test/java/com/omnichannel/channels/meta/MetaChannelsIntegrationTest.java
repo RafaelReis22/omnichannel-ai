@@ -12,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.sun.net.httpserver.HttpServer;
 
 import com.omnichannel.TestcontainersConfiguration;
+import com.omnichannel.channels.meta.MetaSignatures;
 import com.omnichannel.inbox.InboxService;
 import com.omnichannel.inbox.domain.ConversationRepository;
 import com.omnichannel.shared.tenancy.TenantContext;
@@ -125,7 +126,7 @@ class MetaChannelsIntegrationTest {
 	private ResponseEntity<Void> postSigned(String path, String body, String appSecret) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("X-Hub-Signature-256", "sha256=" + MetaWebhookController.hmacSha256(appSecret, body));
+		headers.set("X-Hub-Signature-256", "sha256=" + MetaSignatures.hmacSha256(appSecret, body));
 		return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(body, headers), Void.class);
 	}
 

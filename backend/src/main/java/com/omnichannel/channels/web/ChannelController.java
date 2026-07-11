@@ -71,10 +71,12 @@ class ChannelController {
 		String webhookToken = null;
 		String verifyToken = null;
 		if (request.type() == ChannelType.WHATSAPP && !credentials.containsKey("webhook_token")) {
-			// BSPs não assinam webhooks: o token secreto na URL é a autenticação.
+			// token secreto na URL: autenticação p/ 360dialog e, na Cloud API,
+			// também o verify token digitado no painel Meta for Developers.
 			// Exibido UMA única vez, aqui — depois vive só criptografado.
 			webhookToken = randomToken();
 			credentials.put("webhook_token", webhookToken);
+			verifyToken = webhookToken;
 		}
 		if ((request.type() == ChannelType.MESSENGER || request.type() == ChannelType.INSTAGRAM)
 				&& !credentials.containsKey("verify_token")) {

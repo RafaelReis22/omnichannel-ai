@@ -26,7 +26,10 @@ type Field = { key: string; label: string; placeholder?: string; password?: bool
 const FIELDS_BY_TYPE: Record<string, Field[]> = {
   WEBCHAT: [],
   WHATSAPP: [
-    { key: "api_key", label: "Chave da API do BSP (360dialog)", password: true },
+    // Cloud API oficial (Meta for Developers) — número de teste gratuito
+    { key: "phone_number_id", label: "Phone number ID (Meta for Developers)", placeholder: "ex.: 123456789012345" },
+    { key: "access_token", label: "Access token (WhatsApp > API Setup)", password: true },
+    { key: "app_secret", label: "App Secret (Configurações do app)", password: true },
   ],
   INSTAGRAM: [
     { key: "app_secret", label: "App Secret (app Meta)", password: true },
@@ -186,7 +189,7 @@ function WebhookRevealCard({ channel, onDismiss }: { channel: ConnectedChannel; 
       </div>
       <p className="mt-3 text-xs text-ink-soft">
         {channel.type === "WHATSAPP"
-          ? "Cole a URL do webhook no painel da 360dialog. O token secreto já está embutido na URL."
+          ? "Meta for Developers → WhatsApp → Configuration → Webhook: cole a URL e o verify token acima; assine o campo \"messages\"."
           : "No app Meta: Webhooks → adicionar a URL acima e o verify token; assine o evento \"messages\"."}
       </p>
     </section>
