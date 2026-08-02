@@ -15,7 +15,7 @@ jobs:
     name: Backend (build + testes + arquitetura)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Java 21 (Temurin)
         uses: actions/setup-java@v4
@@ -41,7 +41,7 @@ jobs:
     name: Frontend (lint + build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -67,7 +67,7 @@ jobs:
     needs: backend
     if: github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build da imagem
         working-directory: backend
